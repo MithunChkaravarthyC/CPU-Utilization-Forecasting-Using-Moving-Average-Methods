@@ -1,0 +1,108 @@
+import React, { useState } from 'react';
+import { ForecastPoint } from '../types';
+import { ChevronLeft, ChevronRight, Table } from 'lucide-react';
+
+interface DataTableProps {
+  historicalData: ForecastPoint[];
+  forecastData: ForecastPoint[];
+}
+
+export const DataTable: React.FC<DataTableProps> = ({ historicalData, forecastData }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
+  // Combine historical and future forecast points
+  const combined = [
+    ...forecastData.filter((p) => p.is_forecast),
+    ...[...historicalData].reverse()
+  ];
+
+  const totalPages = Math.ceil(combined.length / rowsPerPage) || 1;
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const currentRows = combined.slice(startIndex, startIndex + rowsPerPage);
+
+  return (
+    <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-5 shadow-sm space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center space-x-2">
+          <Table className="w-4 h-4 text-sky-400" />
+          <h3 className="text-base font-semibold text-white">Telemetry & Forecast Log Table</h3>
+        </div>
+        <span className="text-xs text-gray-400 font-mono">
+          Showing {startIndex + 1} - {Math.min(startIndex + rowsPerPage, combined.length)} of {combined.length} entries
+        </span>
+      </div>
+
+      <div className="overflow-x-auto border border-gray-800 rounded-lg">
+        <table className="w-full text-left text-xs font-mono">
+          <thead className="bg-gray-950 text-gray-400 uppercase tracking-wider border-b border-gray-800">
+            <tr>
+              <th className="py-2.5 px-3">Timestamp</th>
+              <th className="py-2.5 px-3">Type</th>
+              <th className="py-2.5 px-3">Actual CPU</th>
+              <th className="py-2.5 px-3">SMA</th>
+              <th className="py-2.5 px-3">WMA</th>
+              <th className="py-2.5 px-3">EMA</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-800">
+            {currentRows.map((row, idx) => (
+              <tr
+                key={`${row.timestamp}-${idx}`}
+                className={`transition ${
+                  row.is_forecast ? 'bg-sky-950/20 text-sky-200' : 'text-gray-300 hover:bg-gray-850'
+                }`}
+              >
+                <td className="py-2 px-3 whitespace-nowrap">{row.timestamp}</td>
+                <td className="py-2 px-3">
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                      row.is_forecast
+                        ? 'bg-sky-900/60 text-sky-300 border border-sky-700/60'
+                        : 'bg-gray-800 text-gray-300'
+                    }`}
+                  >
+                    {row.is_forecast ? 'Forecast' : 'Observed'}
+                  </span>
+                </td>
+                <td className="py-2 px-3 font-semibold text-white">
+                  {row.actual !== null && row.actual !== undefined ? `${row.actual.toFixed(2)}%` : '--'}
+                </td>
+                <td className="py-2 px-3 text-sky-300">
+                  {row.sma !== null && row.sma !== undefined ? `${row.sma.toFixed(2)}%` : '--'}
+                </td>
+                <td className="py-2 px-3 text-purple-300">
+                  {row.wma !== null && row.wma !== undefined ? `${row.wma.toFixed(2)}%` : '--'}
+                </td>
+                <td className="py-2 px-3 text-emerald-300">
+                  {row.ema !== null && row.ema !== undefined ? `${row.ema.toFixed(2)}%` : '--'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination controls */}
+      <div className="flex items-center justify-between text-xs text-gray-400">
+        <span>Page {currentPage} of {totalPages}</span>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="p-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 disabled:opacity-40 transition"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="p-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 disabled:opacity-40 transition"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
