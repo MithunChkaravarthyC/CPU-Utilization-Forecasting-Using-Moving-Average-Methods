@@ -44,6 +44,9 @@ interface DashboardPageProps {
   isLoadingMonitor: boolean;
   aiStatus: 'ONLINE' | 'OFFLINE';
   modelName: string;
+  isAutoRefresh: boolean;
+  setIsAutoRefresh: (val: boolean) => void;
+  lastSyncTime?: Date;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -75,7 +78,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   isLoadingAI,
   isLoadingMonitor,
   aiStatus,
-  modelName
+  modelName,
+  isAutoRefresh,
+  setIsAutoRefresh,
+  lastSyncTime
 }) => {
   const [showLogTable, setShowLogTable] = useState(false);
 
@@ -120,6 +126,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         onOpenConnectModal={onOpenConnectModal}
         isLoading={isLoadingForecast}
         liveSamplesCount={monitorStatus?.samples_collected ?? 0}
+        isAutoRefresh={isAutoRefresh}
+        setIsAutoRefresh={setIsAutoRefresh}
+        lastSyncTime={lastSyncTime}
       />
 
       {/* 3. Unified Workload & Proactive Forecast Chart */}

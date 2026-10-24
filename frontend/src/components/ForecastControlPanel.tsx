@@ -20,6 +20,9 @@ interface ForecastControlPanelProps {
   onOpenConnectModal?: () => void;
   isLoading: boolean;
   liveSamplesCount: number;
+  isAutoRefresh: boolean;
+  setIsAutoRefresh: (val: boolean) => void;
+  lastSyncTime?: Date;
 }
 
 export const ForecastControlPanel: React.FC<ForecastControlPanelProps> = ({
@@ -35,7 +38,10 @@ export const ForecastControlPanel: React.FC<ForecastControlPanelProps> = ({
   onGenerateSimulation,
   onOpenConnectModal,
   isLoading,
-  liveSamplesCount
+  liveSamplesCount,
+  isAutoRefresh,
+  setIsAutoRefresh,
+  lastSyncTime
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [demoScenario, setDemoScenario] = useState<'24h' | '3d' | '7d'>('24h');
@@ -127,6 +133,26 @@ export const ForecastControlPanel: React.FC<ForecastControlPanelProps> = ({
             </button>
           )}
 
+          {/* Auto-Sync Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsAutoRefresh(!isAutoRefresh)}
+            className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition ${
+              isAutoRefresh
+                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/50 shadow-sm'
+                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+            }`}
+            title={isAutoRefresh ? 'Live Auto-Sync is ACTIVE (Auto-updating every 4s)' : 'Click to enable Live Auto-Sync'}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isAutoRefresh ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+              }`}
+            />
+            <span className="hidden sm:inline">Auto-Update:</span>
+            <span>{isAutoRefresh ? 'ON (4s)' : 'OFF'}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
@@ -145,6 +171,7 @@ export const ForecastControlPanel: React.FC<ForecastControlPanelProps> = ({
             onClick={onRunForecast}
             disabled={isLoading}
             className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-white text-xs font-bold shadow-md transition disabled:opacity-50"
+            title="Force immediate manual forecast update"
           >
             {isLoading ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />

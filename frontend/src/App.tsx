@@ -47,6 +47,10 @@ export const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState<boolean>(false);
 
+  // Auto-Refresh state (enabled by default for continuous live monitoring)
+  const [isAutoRefresh, setIsAutoRefresh] = useState<boolean>(true);
+  const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
+
   // Load initial health & config
   const checkSystemHealth = useCallback(async () => {
     try {
@@ -61,9 +65,9 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Run Forecast
-  const handleRunForecast = useCallback(async () => {
-    setIsLoadingForecast(true);
+  // Run Forecast (supports silent background mode for seamless auto-refresh)
+  const handleRunForecast = useCallback(async (isSilent: boolean = false) => {
+    if (!isSilent) setIsLoadingForecast(true);
     setErrorMessage(null);
     try {
       const data = await postForecast({
@@ -75,10 +79,13 @@ export const App: React.FC = () => {
         low_threshold: lowThreshold
       });
       setForecastData(data);
+      setLastSyncTime(new Date());
     } catch (err: any) {
-      setErrorMessage(err.message || 'Forecast calculation failed');
+      if (!isSilent) {
+        setErrorMessage(err.message || 'Forecast calculation failed');
+      }
     } finally {
-      setIsLoadingForecast(false);
+      if (!isSilent) setIsLoadingForecast(false);
     }
   }, [horizon, windowSize, source, resolution, highThreshold, lowThreshold]);
 
@@ -203,6 +210,20 @@ export const App: React.FC = () => {
     handleRunForecast();
   }, []);
 
+  // Automatically update forecast whenever user switches horizon, window, source, or resolution
+  useEffect(() => {
+    handleRunForecast(false);
+  }, [horizon, windowSize, source, resolution]);
+
+  // Continuous Live Auto-Sync: automatically refreshes graph & forecast every 4 seconds in the background
+  useEffect(() => {
+    if (!isAutoRefresh) return;
+    const interval = setInterval(() => {
+      handleRunForecast(true); // silent update without blocking spinner
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isAutoRefresh, handleRunForecast]);
+
   // Periodic status poll (every 15s if live monitoring is running)
   useEffect(() => {
     if (!monitorStatus?.is_running) return;
@@ -279,7 +300,7 @@ export const App: React.FC = () => {
             onClearMonitoring={handleClearMonitoring}
             onRefreshMonitoring={handleRefreshMonitoring}
             onOpenConnectModal={() => setIsConnectModalOpen(true)}
-            onRunForecast={handleRunForecast}
+            onRunForecast={() => handleRunForecast(false)}
             onCompareMethods={() => setActiveTab('accuracy')}
             onGenerateSimulation={handleGenerateSimulation}
             onGenerateAIExplanation={handleGenerateAIExplanation}
@@ -288,6 +309,9 @@ export const App: React.FC = () => {
             isLoadingMonitor={isLoadingMonitor}
             aiStatus={aiStatus}
             modelName={modelName}
+            isAutoRefresh={isAutoRefresh}
+            setIsAutoRefresh={setIsAutoRefresh}
+            lastSyncTime={lastSyncTime}
           />
         )}
 

@@ -442,10 +442,11 @@ async def create_forecast(req: ForecastRequest):
     
     # 2. Multi-step Recursive Forecasting
     steps, interval_mins, res_label = get_horizon_resolution_steps(req.horizon, req.resolution)
+    last_dt = datetime.strptime(timestamps[-1], "%Y-%m-%d %H:%M:%S")
     
-    sma_future = forecast_recursive_sma(cpu_values, req.window, steps)
-    wma_future = forecast_recursive_wma(cpu_values, req.window, steps)
-    ema_future = forecast_recursive_ema(cpu_values, req.window, steps)
+    sma_future = forecast_recursive_sma(cpu_values, req.window, steps, start_time=last_dt, interval_mins=interval_mins)
+    wma_future = forecast_recursive_wma(cpu_values, req.window, steps, start_time=last_dt, interval_mins=interval_mins)
+    ema_future = forecast_recursive_ema(cpu_values, req.window, steps, start_time=last_dt, interval_mins=interval_mins)
     
     # Final horizon forecast values
     sma_final = sma_future[-1]
