@@ -11,7 +11,8 @@ import { ConnectDataModal } from './components/ConnectDataModal';
 import {
   MonitorStatus,
   ForecastResponse,
-  AIExplainResponse
+  AIExplainResponse,
+  SessionStatus
 } from './types';
 import {
   fetchHealth,
@@ -22,7 +23,9 @@ import {
   clearMonitorData,
   generateSimulation,
   postForecast,
-  requestAIExplain
+  requestAIExplain,
+  fetchSessionStatus,
+  getSessionId
 } from './services/api';
 import { AlertCircle, X } from 'lucide-react';
 
@@ -50,6 +53,7 @@ export const App: React.FC = () => {
   // Auto-Refresh state (enabled by default for continuous live monitoring)
   const [isAutoRefresh, setIsAutoRefresh] = useState<boolean>(true);
   const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
 
   // Load initial health & config
   const checkSystemHealth = useCallback(async () => {
@@ -60,6 +64,9 @@ export const App: React.FC = () => {
 
       const status = await fetchMonitorStatus();
       setMonitorStatus(status);
+
+      const sess = await fetchSessionStatus(getSessionId()).catch(() => null);
+      if (sess) setSessionStatus(sess);
     } catch (err: any) {
       console.warn('System health check error:', err);
     }
@@ -70,6 +77,8 @@ export const App: React.FC = () => {
     if (!isSilent) setIsLoadingForecast(true);
     setErrorMessage(null);
     try {
+      // Also update session status on forecast poll
+      fetchSessionStatus(getSessionId()).then(setSessionStatus).catch(() => {});
       const data = await postForecast({
         horizon,
         window: windowSize,

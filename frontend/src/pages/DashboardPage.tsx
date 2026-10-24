@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TopCards } from '../components/TopCards';
 import { ForecastControlPanel } from '../components/ForecastControlPanel';
+import { LiveUtilizationChart } from '../charts/LiveUtilizationChart';
 import { UnifiedForecastChart } from '../charts/UnifiedForecastChart';
 import { ForecastComparisonCard } from '../components/ForecastComparisonCard';
 import { AccuracyCard } from '../components/AccuracyCard';
@@ -10,7 +11,8 @@ import { DataTable } from '../components/DataTable';
 import {
   MonitorStatus,
   ForecastResponse,
-  AIExplainResponse
+  AIExplainResponse,
+  SessionStatus
 } from '../types';
 import { ChevronDown, ChevronUp, Table, Laptop } from 'lucide-react';
 
@@ -47,6 +49,8 @@ interface DashboardPageProps {
   isAutoRefresh: boolean;
   setIsAutoRefresh: (val: boolean) => void;
   lastSyncTime?: Date;
+  deviceName?: string | null;
+  sessionStatus?: SessionStatus | null;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -81,9 +85,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   modelName,
   isAutoRefresh,
   setIsAutoRefresh,
-  lastSyncTime
+  lastSyncTime,
+  deviceName,
+  sessionStatus
 }) => {
   const [showLogTable, setShowLogTable] = useState(false);
+  const [showLiveMonitor, setShowLiveMonitor] = useState(true);
 
   const currentCpu = forecastData?.current_cpu ?? monitorStatus?.current_cpu ?? null;
   const bestForecastValue = forecastData
@@ -131,7 +138,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         lastSyncTime={lastSyncTime}
       />
 
-      {/* 3. Unified Workload & Proactive Forecast Chart */}
+      {/* 3. Real-Time CPU Utilization Stream (Auto-updating with Show/Hide Toggle) */}
+      {forecastData && (
+        <LiveUtilizationChart
+          data={forecastData.historical_series}
+          currentCpu={currentCpu}
+          deviceName={deviceName || sessionStatus?.device_name}
+          sessionId={sessionStatus?.session_id}
+          source={source}
+          highThreshold={highThreshold}
+          lowThreshold={lowThreshold}
+          isVisible={showLiveMonitor}
+          onToggleVisibility={() => setShowLiveMonitor(!showLiveMonitor)}
+          samplesCount={forecastData.sample_count}
+        />
+      )}
+
+      {/* 4. Proactive Prediction & Workload Forecast Chart */}
       {forecastData && (
         <UnifiedForecastChart
           historicalData={forecastData.historical_series}
