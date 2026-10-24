@@ -2,7 +2,7 @@ import os
 import io
 import csv
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query, status, UploadFile, File, Form
@@ -126,7 +126,7 @@ async def monitor_stop():
 
 @app.post("/api/monitor/clear")
 async def monitor_clear(
-    source: str = Query("LIVE", enum=["LIVE", "SIMULATION", "ALL"]),
+    source: Literal["LIVE", "SIMULATION", "ALL"] = "LIVE",
     session_id: Optional[str] = Query(None)
 ):
     if source == "ALL":
@@ -348,7 +348,7 @@ async def download_agent_script():
 
 @app.get("/api/data")
 async def get_data(
-    source: str = Query("SIMULATION", enum=["LIVE", "SIMULATION"]),
+    source: Literal["LIVE", "SIMULATION"] = "SIMULATION",
     session_id: Optional[str] = Query(None),
     limit: Optional[int] = Query(200, ge=10, le=10000)
 ):
@@ -534,7 +534,7 @@ async def create_forecast(req: ForecastRequest):
 
 @app.post("/api/forecast/compare")
 async def forecast_window_comparison(
-    source: str = Query("SIMULATION", enum=["LIVE", "SIMULATION"]),
+    source: Literal["LIVE", "SIMULATION"] = "SIMULATION",
     session_id: Optional[str] = Query(None)
 ):
     measurements = get_measurements(
@@ -561,7 +561,7 @@ async def forecast_window_comparison(
 
 @app.get("/api/metrics")
 async def get_metrics(
-    source: str = Query("SIMULATION", enum=["LIVE", "SIMULATION"]),
+    source: Literal["LIVE", "SIMULATION"] = "SIMULATION",
     session_id: Optional[str] = Query(None),
     window: int = Query(5, ge=2, le=60)
 ):
@@ -590,7 +590,7 @@ async def get_metrics(
 
 @app.get("/api/backtest")
 async def get_backtest(
-    source: str = Query("SIMULATION", enum=["LIVE", "SIMULATION"]),
+    source: Literal["LIVE", "SIMULATION"] = "SIMULATION",
     session_id: Optional[str] = Query(None),
     window: int = Query(5, ge=2, le=60)
 ):
