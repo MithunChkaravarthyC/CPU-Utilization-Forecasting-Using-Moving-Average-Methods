@@ -295,6 +295,7 @@ export const App: React.FC = () => {
           <ForecastAnalysisPage
             forecastData={forecastData}
             highThreshold={highThreshold}
+            lowThreshold={lowThreshold}
           />
         )}
 
@@ -358,13 +359,13 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800/80 bg-gray-950 py-4 text-center text-xs text-gray-400">
+      <footer className="border-t border-slate-800/80 bg-[#070b14] py-4 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
-            <strong>CPU Utilization Forecasting Engine</strong> — Mathematics Micro Project
+            <strong className="text-slate-300">CPU Pulse</strong> — Intelligent Cloud Capacity & Workload Forecasting
           </span>
-          <span className="font-mono text-gray-400">
-            SMA • WMA • EMA • Backtesting • Cloud Autoscaling • Local Ollama
+          <span className="font-mono text-slate-500">
+            Real-Time Telemetry • 24h Projections • Proactive Capacity Rules
           </span>
         </div>
       </footer>

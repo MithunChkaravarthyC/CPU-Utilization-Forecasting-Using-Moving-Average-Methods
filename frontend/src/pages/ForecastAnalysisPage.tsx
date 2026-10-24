@@ -1,167 +1,180 @@
 import React from 'react';
 import { ForecastResponse } from '../types';
-import { ForecastHorizonChart } from '../charts/ForecastHorizonChart';
-import { TrendingUp, TrendingDown, Minus, Info, Calculator, Cpu } from 'lucide-react';
+import { UnifiedForecastChart } from '../charts/UnifiedForecastChart';
+import { ForecastComparisonCard } from '../components/ForecastComparisonCard';
+import { TrendingUp, TrendingDown, Minus, Cpu, ShieldCheck, Clock, Zap } from 'lucide-react';
 
 interface ForecastAnalysisPageProps {
   forecastData: ForecastResponse | null;
   highThreshold: number;
+  lowThreshold?: number;
 }
 
 export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
   forecastData,
-  highThreshold
+  highThreshold,
+  lowThreshold = 20
 }) => {
   if (!forecastData) {
     return (
-      <div className="p-8 text-center text-gray-400 bg-gray-900 border border-gray-800 rounded-xl font-mono">
-        No active forecast data available. Please return to Dashboard and click "Run Forecast".
+      <div className="p-12 text-center text-slate-400 bg-[#0e1424]/80 border border-slate-800 rounded-2xl">
+        No active forecast data available. Please return to Overview and click "Update Forecast".
       </div>
     );
   }
 
   const trend = forecastData.trend;
-  const getTrendIcon = (dir: string) => {
-    if (dir === 'INCREASING') return <TrendingUp className="w-5 h-5 text-rose-400" />;
-    if (dir === 'DECREASING') return <TrendingDown className="w-5 h-5 text-emerald-400" />;
-    return <Minus className="w-5 h-5 text-sky-400" />;
+  const getTrendInfo = (dir: string) => {
+    if (dir === 'INCREASING') {
+      return {
+        label: 'Traffic Rising',
+        desc: 'Usage is climbing. System preparing for higher load.',
+        color: 'text-amber-400',
+        bg: 'bg-amber-950/40 border-amber-800/50',
+        icon: TrendingUp
+      };
+    }
+    if (dir === 'DECREASING') {
+      return {
+        label: 'Traffic Easing',
+        desc: 'Usage is declining toward low-load territory.',
+        color: 'text-teal-400',
+        bg: 'bg-teal-950/40 border-teal-800/50',
+        icon: TrendingDown
+      };
+    }
+    return {
+      label: 'Stable Workload',
+      desc: 'Traffic is balanced with no sharp surges.',
+      color: 'text-cyan-400',
+      bg: 'bg-cyan-950/40 border-cyan-800/50',
+      icon: Minus
+    };
   };
+
+  const trendInfo = getTrendInfo(trend.direction);
+  const TrendIcon = trendInfo.icon;
+
+  const bestVal =
+    forecastData.best_method === 'SMA'
+      ? forecastData.sma_forecast
+      : forecastData.best_method === 'WMA'
+      ? forecastData.wma_forecast
+      : forecastData.ema_forecast;
+
+  const diff = bestVal - forecastData.current_cpu;
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-800 pb-4">
-        <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-          <Cpu className="w-6 h-6 text-sky-400" />
-          <span>In-Depth Forecast Analysis</span>
-        </h2>
-        <p className="text-xs text-gray-400 mt-1">
-          Detailed mathematical breakdown of recursive multi-step forecasting and workload trajectories
-        </p>
+      {/* Header */}
+      <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 className="text-xl font-bold text-white flex items-center space-x-2">
+            <Cpu className="w-5 h-5 text-cyan-400" />
+            <span>Workload Predictor Lab</span>
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Proactive workload projections ahead of time so you can right-size servers before bottlenecks occur.
+          </p>
+        </div>
+
+        <span className="text-xs px-3 py-1 rounded-full bg-slate-900 text-slate-300 border border-slate-700 font-mono">
+          Horizon: {forecastData.horizon} ({forecastData.resolution})
+        </span>
       </div>
 
-      {/* Trend & Horizon Metrics Grid */}
+      {/* 4 Summary Stat Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <span className="text-xs text-gray-400 uppercase tracking-wider block mb-1">
-            Historical Workload Trend
+        {/* Workload Direction */}
+        <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-4">
+          <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1 font-semibold">
+            Traffic Trend
           </span>
           <div className="flex items-center space-x-2">
-            {getTrendIcon(trend.direction)}
-            <span className="text-xl font-mono font-bold text-white">
-              {trend.direction}
+            <TrendIcon className={`w-5 h-5 ${trendInfo.color}`} />
+            <span className={`text-lg font-bold ${trendInfo.color}`}>
+              {trendInfo.label}
             </span>
           </div>
-          <span className="text-[11px] text-gray-400 mt-2 block font-mono">
-            Slope: {trend.slope > 0 ? '+' : ''}{trend.slope.toFixed(4)} %/sample
+          <span className="text-[11px] text-slate-400 mt-1.5 block">
+            {trendInfo.desc}
           </span>
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <span className="text-xs text-gray-400 uppercase tracking-wider block mb-1">
-            Recent vs Overall Mean
+        {/* Expected Peak Load */}
+        <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-4">
+          <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1 font-semibold">
+            Predicted Workload
           </span>
-          <div className="flex items-baseline space-x-2">
-            <span className="text-xl font-mono font-bold text-sky-300">
-              {trend.recent_avg.toFixed(1)}%
+          <div className="flex items-baseline space-x-1.5">
+            <span className="text-2xl font-mono font-extrabold text-cyan-300">
+              {bestVal.toFixed(1)}%
             </span>
-            <span className="text-xs text-gray-400">
-              (All: {trend.historical_avg.toFixed(1)}%)
-            </span>
+            <span className="text-xs text-slate-400">in {forecastData.horizon}</span>
           </div>
-          <span className="text-[11px] text-gray-400 mt-2 block">
-            Delta: {(trend.recent_avg - trend.historical_avg).toFixed(1)}%
+          <span className="text-[11px] text-slate-400 mt-1.5 block">
+            {diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`} shift from current
           </span>
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <span className="text-xs text-gray-400 uppercase tracking-wider block mb-1">
-            Forecast Horizon
+        {/* Safe Capacity Target */}
+        <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-4">
+          <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1 font-semibold">
+            Capacity Safety Zone
           </span>
           <div className="flex items-baseline space-x-2">
-            <span className="text-xl font-mono font-bold text-cyan-300">
-              {forecastData.horizon.toUpperCase()}
+            <span className="text-2xl font-mono font-extrabold text-white">
+              20% – {highThreshold}%
             </span>
-            <span className="text-xs text-gray-400">({forecastData.resolution})</span>
           </div>
-          <span className="text-[11px] text-gray-400 mt-2 block font-mono">
-            {forecastData.forecast_series.length - 1} recursive steps
+          <span className="text-[11px] text-emerald-400 mt-1.5 block font-medium">
+            {bestVal <= highThreshold && bestVal >= lowThreshold
+              ? 'Within safe boundaries'
+              : bestVal > highThreshold
+              ? 'Exceeds safe ceiling'
+              : 'Below floor (low load)'}
           </span>
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <span className="text-xs text-gray-400 uppercase tracking-wider block mb-1">
-            Selected Best Model
+        {/* Recommended Proactive Action */}
+        <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-4">
+          <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1 font-semibold">
+            Recommended Action
           </span>
-          <div className="flex items-baseline space-x-2">
-            <span className="text-xl font-mono font-bold text-amber-300">
-              {forecastData.best_method}
+          <div className="flex items-center space-x-2">
+            <span className="text-base font-bold text-white">
+              {forecastData.scaling_decision.decision === 'NORMAL'
+                ? 'Optimal Capacity'
+                : forecastData.scaling_decision.decision === 'SCALE UP'
+                ? 'Add +1 Server'
+                : 'Reduce -1 Server'}
             </span>
-            <span className="text-xs text-gray-400">(MAE min)</span>
           </div>
-          <span className="text-[11px] text-gray-400 mt-2 block truncate" title={forecastData.best_method_reason}>
-            {forecastData.best_method_reason}
+          <span className="text-[11px] text-slate-400 mt-1.5 block truncate">
+            {forecastData.scaling_decision.reason}
           </span>
         </div>
       </div>
 
-      {/* Main Forecast Horizon Chart */}
-      <ForecastHorizonChart
+      {/* Main Continuous Timeline Chart */}
+      <UnifiedForecastChart
         historicalData={forecastData.historical_series}
         forecastData={forecastData.forecast_series}
         horizon={forecastData.horizon}
         bestMethod={forecastData.best_method}
         highThreshold={highThreshold}
+        lowThreshold={lowThreshold}
       />
 
-      {/* Mathematical Explanation of Recursive Forecasting */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
-        <div className="flex items-center space-x-2">
-          <Calculator className="w-5 h-5 text-sky-400" />
-          <h3 className="text-base font-semibold text-white">
-            Controlled Recursive Multi-Step Forecasting Principle
-          </h3>
-        </div>
-
-        <p className="text-sm text-gray-300 leading-relaxed">
-          Standard moving averages naturally generate a <strong>one-step-ahead</strong> forecast (x&#770;<sub>t+1</sub>).
-          To project utilization into multi-step operational cloud horizons (such as 6, 12, or 24 hours), our engine employs a strict <strong>controlled recursive autoregressive loop</strong>:
-        </p>
-
-        <div className="bg-gray-950 p-4 rounded-lg border border-gray-800 font-mono text-xs text-sky-200 space-y-2">
-          <p>{"1. At step t+1: Compute x̂_{t+1} = Model(x_t, x_{t-1}, ..., x_{t-n+1})"}</p>
-          <p>{"2. Append synthetic projection x̂_{t+1} into the rolling observation buffer."}</p>
-          <p>{"3. At step t+2: Compute x̂_{t+2} = Model(x̂_{t+1}, x_t, ..., x_{t-n+2})"}</p>
-          <p>{"4. Iterate recursively until the requested forecast horizon is fully populated."}</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-          <div className="p-3 bg-gray-950/80 rounded-lg border border-gray-800 text-xs">
-            <span className="font-bold text-sky-400 block mb-1">Simple Moving Average (SMA)</span>
-            <p className="text-gray-400">
-              In recursive forecasting, SMA projections will smoothly transition toward the mean of the latest n window values.
-            </p>
-          </div>
-          <div className="p-3 bg-gray-950/80 rounded-lg border border-gray-800 text-xs">
-            <span className="font-bold text-purple-400 block mb-1">Weighted Moving Average (WMA)</span>
-            <p className="text-gray-400">
-              WMA preserves recent momentum more dynamically before gently attenuating to the window's weighted equilibrium.
-            </p>
-          </div>
-          <div className="p-3 bg-gray-950/80 rounded-lg border border-gray-800 text-xs">
-            <span className="font-bold text-emerald-400 block mb-1">Exponential Moving Average (EMA)</span>
-            <p className="text-gray-400">
-              {"Single exponential smoothing without seasonal trend maintains an asymptotic horizontal trajectory: x̂_{t+k} = EMA_t."}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-2 text-xs text-amber-300 bg-amber-950/30 p-3 rounded-lg border border-amber-800/40">
-          <Info className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>
-            <strong>Scientific Integrity Statement:</strong> Multi-step forecasts are mathematical projections based on historical data. The application explicitly documents that recursive projections do not constitute future measured data. No future actuals are leaked during calculation.
-          </span>
-        </div>
-      </div>
+      {/* Model Breakdown */}
+      <ForecastComparisonCard
+        smaForecast={forecastData.sma_forecast}
+        wmaForecast={forecastData.wma_forecast}
+        emaForecast={forecastData.ema_forecast}
+        bestMethod={forecastData.best_method}
+        bestMethodReason={forecastData.best_method_reason}
+        horizon={forecastData.horizon}
+      />
     </div>
   );
 };

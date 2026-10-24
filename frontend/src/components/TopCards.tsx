@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, TrendingUp, Award, Zap } from 'lucide-react';
+import { Activity, TrendingUp, Sparkles, Server, CheckCircle2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { ScalingDecision } from '../types';
 
 interface TopCardsProps {
@@ -15,38 +15,83 @@ export const TopCards: React.FC<TopCardsProps> = ({
   currentCpu,
   forecastCpu,
   bestMethod,
-  bestMethodReason,
   scaling,
   horizon
 }) => {
-  const getActionColor = (decision?: string) => {
-    switch (decision) {
-      case 'SCALE UP':
-        return 'text-rose-400 bg-rose-950/40 border-rose-800/60';
-      case 'SCALE DOWN':
-        return 'text-amber-400 bg-amber-950/40 border-amber-800/60';
-      case 'NORMAL':
-        return 'text-emerald-400 bg-emerald-950/40 border-emerald-800/60';
+  // User-friendly model label
+  const getFriendlyModelName = (method: string | null) => {
+    switch (method) {
+      case 'EMA':
+        return { name: 'Fast-Adaptive', badge: 'High Reaction', desc: 'Adapts quickly to sudden traffic spikes' };
+      case 'WMA':
+        return { name: 'Recent-Weighted', badge: 'Balanced Shift', desc: 'Prioritizes recent 15-minute trend' };
+      case 'SMA':
+        return { name: 'Balanced Average', badge: 'Smooth Baseline', desc: 'Filters out noise for steady load' };
       default:
-        return 'text-sky-400 bg-sky-950/40 border-sky-800/60';
+        return { name: 'Adaptive Model', badge: 'Auto Selected', desc: 'Selected for best accuracy' };
     }
   };
 
+  const modelInfo = getFriendlyModelName(bestMethod);
+
+  // User-friendly scaling label
+  const getActionDetails = (decision?: string) => {
+    switch (decision) {
+      case 'SCALE UP':
+        return {
+          label: 'Scale Up (+1 Server)',
+          badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+          dotClass: 'bg-rose-400',
+          icon: ArrowUpRight,
+          desc: 'High traffic incoming. Extra capacity advised.'
+        };
+      case 'SCALE DOWN':
+        return {
+          label: 'Scale Down (-1 Server)',
+          badgeClass: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+          dotClass: 'bg-amber-400',
+          icon: ArrowDownRight,
+          desc: 'Low load detected. Save cloud costs safely.'
+        };
+      case 'NORMAL':
+        return {
+          label: 'Optimal Capacity',
+          badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+          dotClass: 'bg-emerald-400',
+          icon: CheckCircle2,
+          desc: 'Current servers are in the sweet spot (20%-75%).'
+        };
+      default:
+        return {
+          label: 'System Healthy',
+          badgeClass: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+          dotClass: 'bg-sky-400',
+          icon: Server,
+          desc: 'Continuous real-time auto-pilot.'
+        };
+    }
+  };
+
+  const action = getActionDetails(scaling?.decision);
+  const ActionIcon = action.icon;
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Current CPU Card */}
-      <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-5 shadow-sm hover:border-gray-700 transition">
-        <div className="flex items-center justify-between text-gray-400 text-xs uppercase font-medium tracking-wider mb-2">
-          <span>Current CPU</span>
-          <Activity className="w-4 h-4 text-sky-400" />
+      {/* 1. Current Workload */}
+      <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition">
+        <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+          <span>Current Workload</span>
+          <span className="p-1 rounded-md bg-sky-950/60 text-sky-400 border border-sky-800/40">
+            <Activity className="w-3.5 h-3.5" />
+          </span>
         </div>
         <div className="flex items-baseline space-x-2">
-          <span className="text-3xl font-mono font-bold text-white">
+          <span className="text-3xl font-extrabold tracking-tight text-white font-mono">
             {currentCpu !== null ? `${currentCpu.toFixed(1)}%` : '--'}
           </span>
-          <span className="text-xs text-gray-400">sampled now</span>
+          <span className="text-xs text-slate-400">active now</span>
         </div>
-        <div className="mt-3 w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+        <div className="mt-3.5 w-full bg-slate-800/80 rounded-full h-2 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
               (currentCpu || 0) >= 75
@@ -58,62 +103,83 @@ export const TopCards: React.FC<TopCardsProps> = ({
             style={{ width: `${Math.min(100, Math.max(0, currentCpu || 0))}%` }}
           />
         </div>
+        <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Target zone: 20% – 75%</span>
+          <span className={(currentCpu || 0) >= 75 ? 'text-rose-400 font-semibold' : 'text-emerald-400 font-semibold'}>
+            {(currentCpu || 0) >= 75 ? 'High Load' : 'Healthy'}
+          </span>
+        </div>
       </div>
 
-      {/* Forecast CPU Card */}
-      <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-5 shadow-sm hover:border-gray-700 transition">
-        <div className="flex items-center justify-between text-gray-400 text-xs uppercase font-medium tracking-wider mb-2">
-          <span>{horizon.toUpperCase()} Forecast</span>
-          <TrendingUp className="w-4 h-4 text-cyan-400" />
+      {/* 2. Expected Workload (Forecast) */}
+      <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition">
+        <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+          <span>Expected Next Load</span>
+          <span className="p-1 rounded-md bg-cyan-950/60 text-cyan-400 border border-cyan-800/40">
+            <TrendingUp className="w-3.5 h-3.5" />
+          </span>
         </div>
         <div className="flex items-baseline space-x-2">
-          <span className="text-3xl font-mono font-bold text-cyan-300">
+          <span className="text-3xl font-extrabold tracking-tight text-cyan-300 font-mono">
             {forecastCpu !== null ? `${forecastCpu.toFixed(1)}%` : '--'}
           </span>
-          <span className="text-xs text-gray-400">recursive math</span>
-        </div>
-        <div className="mt-2 text-xs text-gray-400 flex items-center justify-between">
-          <span>Target Horizon</span>
-          <span className="text-cyan-400 font-mono font-medium">{horizon} ahead</span>
-        </div>
-      </div>
-
-      {/* Best Method Card */}
-      <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-5 shadow-sm hover:border-gray-700 transition">
-        <div className="flex items-center justify-between text-gray-400 text-xs uppercase font-medium tracking-wider mb-2">
-          <span>Best Method</span>
-          <Award className="w-4 h-4 text-amber-400" />
-        </div>
-        <div className="flex items-baseline space-x-2">
-          <span className="text-3xl font-mono font-bold text-amber-300">
-            {bestMethod || '--'}
-          </span>
-          <span className="text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/40">
-            Lowest MAE
+          <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-700/50 font-medium">
+            in {horizon}
           </span>
         </div>
-        <p className="mt-2 text-xs text-gray-400 truncate" title={bestMethodReason}>
-          {bestMethodReason || 'Evaluated via historical backtesting'}
+        <div className="mt-3 text-xs text-slate-300 flex items-center justify-between">
+          <span className="text-slate-400">Peak Prediction</span>
+          <span className="font-mono text-cyan-400 font-medium">
+            {forecastCpu && currentCpu ? `${forecastCpu > currentCpu ? '+' : ''}${(forecastCpu - currentCpu).toFixed(1)}% shift` : 'Continuous'}
+          </span>
+        </div>
+        <p className="mt-1 text-[11px] text-slate-400 truncate">
+          Calculated ahead for proactive scaling
         </p>
       </div>
 
-      {/* Action / Scaling Status Card */}
-      <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-5 shadow-sm hover:border-gray-700 transition">
-        <div className="flex items-center justify-between text-gray-400 text-xs uppercase font-medium tracking-wider mb-2">
-          <span>Cloud Scaling</span>
-          <Zap className="w-4 h-4 text-rose-400" />
+      {/* 3. Recommended Action */}
+      <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition">
+        <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+          <span>Capacity Recommendation</span>
+          <span className="p-1 rounded-md bg-indigo-950/60 text-indigo-400 border border-indigo-800/40">
+            <Server className="w-3.5 h-3.5" />
+          </span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ${action.badgeClass}`}>
+            <ActionIcon className="w-4 h-4" />
+            <span>{action.label}</span>
+          </span>
+        </div>
+        <p className="mt-3 text-[11px] text-slate-300 leading-snug">
+          {action.desc}
+        </p>
+      </div>
+
+      {/* 4. Best Fit Model */}
+      <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition">
+        <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+          <span>Top Model</span>
+          <span className="p-1 rounded-md bg-amber-950/60 text-amber-400 border border-amber-800/40">
+            <Sparkles className="w-3.5 h-3.5" />
+          </span>
         </div>
         <div className="flex items-baseline space-x-2">
-          <span className={`text-2xl font-mono font-extrabold px-3 py-1 rounded-lg border ${getActionColor(scaling?.decision)}`}>
-            {scaling?.decision || 'MONITOR'}
+          <span className="text-2xl font-extrabold tracking-tight text-white font-mono">
+            {modelInfo.name}
+          </span>
+          <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700/50">
+            {bestMethod || 'EMA'}
           </span>
         </div>
-        <div className="mt-2 text-xs text-gray-400 flex items-center justify-between">
-          <span>Threshold: {scaling?.threshold ?? 75}%</span>
-          <span className="font-mono font-semibold text-gray-300">
-            {scaling?.difference !== undefined ? `${scaling.difference > 0 ? '+' : ''}${scaling.difference.toFixed(1)}%` : '--'}
-          </span>
+        <div className="mt-2.5 flex items-center space-x-1.5 text-xs text-amber-300 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+          <span>{modelInfo.badge}</span>
         </div>
+        <p className="mt-1 text-[11px] text-slate-400 truncate" title={modelInfo.desc}>
+          {modelInfo.desc}
+        </p>
       </div>
     </div>
   );

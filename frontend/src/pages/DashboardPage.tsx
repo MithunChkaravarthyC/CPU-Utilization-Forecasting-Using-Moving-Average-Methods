@@ -1,9 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TopCards } from '../components/TopCards';
-import { LiveMonitoringPanel } from '../components/LiveMonitoringPanel';
 import { ForecastControlPanel } from '../components/ForecastControlPanel';
-import { MainCpuChart } from '../charts/MainCpuChart';
-import { ForecastHorizonChart } from '../charts/ForecastHorizonChart';
+import { UnifiedForecastChart } from '../charts/UnifiedForecastChart';
 import { ForecastComparisonCard } from '../components/ForecastComparisonCard';
 import { AccuracyCard } from '../components/AccuracyCard';
 import { ScalingDecisionCard } from '../components/ScalingDecisionCard';
@@ -14,6 +12,7 @@ import {
   ForecastResponse,
   AIExplainResponse
 } from '../types';
+import { ChevronDown, ChevronUp, Table, Laptop } from 'lucide-react';
 
 interface DashboardPageProps {
   monitorStatus: MonitorStatus | null;
@@ -78,6 +77,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   aiStatus,
   modelName
 }) => {
+  const [showLogTable, setShowLogTable] = useState(false);
+
   const currentCpu = forecastData?.current_cpu ?? monitorStatus?.current_cpu ?? null;
   const bestForecastValue = forecastData
     ? forecastData.best_method === 'SMA'
@@ -89,7 +90,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Top 4 Summary Cards */}
+      {/* 1. Top 4 Crisp Metric Tiles */}
       <TopCards
         currentCpu={currentCpu}
         forecastCpu={bestForecastValue}
@@ -99,18 +100,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         horizon={horizon}
       />
 
-      {/* Live Monitoring Panel */}
-      <LiveMonitoringPanel
-        status={monitorStatus}
-        onStart={onStartMonitoring}
-        onStop={onStopMonitoring}
-        onClear={onClearMonitoring}
-        onRefresh={onRefreshMonitoring}
-        onOpenConnectModal={onOpenConnectModal}
-        isLoading={isLoadingMonitor}
-      />
-
-      {/* Forecast Controls */}
+      {/* 2. Sleek Forecast Control Toolbar */}
       <ForecastControlPanel
         source={source}
         setSource={setSource}
@@ -127,31 +117,38 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         onRunForecast={onRunForecast}
         onCompareMethods={onCompareMethods}
         onGenerateSimulation={onGenerateSimulation}
+        onOpenConnectModal={onOpenConnectModal}
         isLoading={isLoadingForecast}
         liveSamplesCount={monitorStatus?.samples_collected ?? 0}
       />
 
-      {/* Main Historical Chart */}
+      {/* 3. Unified Workload & Proactive Forecast Chart */}
       {forecastData && (
-        <MainCpuChart
-          data={forecastData.historical_series}
-          highThreshold={highThreshold}
-          lowThreshold={lowThreshold}
-        />
-      )}
-
-      {/* Forecast Horizon Chart */}
-      {forecastData && (
-        <ForecastHorizonChart
+        <UnifiedForecastChart
           historicalData={forecastData.historical_series}
           forecastData={forecastData.forecast_series}
           horizon={horizon}
           bestMethod={forecastData.best_method}
           highThreshold={highThreshold}
+          lowThreshold={lowThreshold}
         />
       )}
 
-      {/* 2-Column: Method Comparison & Accuracy Metrics */}
+      {/* 4. Actionable Two-Column Section: Capacity Decision & AI Assistant */}
+      {forecastData && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ScalingDecisionCard scaling={forecastData.scaling_decision} />
+          <AIExplanationCard
+            explanationData={aiExplanation}
+            onGenerateExplanation={onGenerateAIExplanation}
+            isLoading={isLoadingAI}
+            aiStatus={aiStatus}
+            modelName={modelName}
+          />
+        </div>
+      )}
+
+      {/* 5. Model Accuracy & Prediction Comparisons */}
       {forecastData && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ForecastComparisonCard
@@ -169,28 +166,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       )}
 
-      {/* Scaling Decision Card */}
+      {/* 6. Expandable Raw Data Log Section (Kept secondary to avoid clutter) */}
       {forecastData && (
-        <ScalingDecisionCard scaling={forecastData.scaling_decision} />
-      )}
+        <div className="border border-slate-800/80 rounded-2xl overflow-hidden bg-[#0e1424]/60">
+          <button
+            type="button"
+            onClick={() => setShowLogTable(!showLogTable)}
+            className="w-full px-6 py-3.5 flex items-center justify-between text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-900/60 transition"
+          >
+            <div className="flex items-center space-x-2">
+              <Table className="w-4 h-4 text-cyan-400" />
+              <span>Inspection Logs & Recorded Metrics ({forecastData.sample_count} observations)</span>
+            </div>
+            <div className="flex items-center space-x-1.5 text-slate-400">
+              <span>{showLogTable ? 'Hide Table' : 'Expand Table'}</span>
+              {showLogTable ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </button>
 
-      {/* AI Explanation Card */}
-      {forecastData && (
-        <AIExplanationCard
-          explanationData={aiExplanation}
-          onGenerateExplanation={onGenerateAIExplanation}
-          isLoading={isLoadingAI}
-          aiStatus={aiStatus}
-          modelName={modelName}
-        />
-      )}
-
-      {/* Telemetry Log Data Table */}
-      {forecastData && (
-        <DataTable
-          historicalData={forecastData.historical_series}
-          forecastData={forecastData.forecast_series}
-        />
+          {showLogTable && (
+            <div className="p-4 border-t border-slate-800">
+              <DataTable
+                historicalData={forecastData.historical_series}
+                forecastData={forecastData.forecast_series}
+              />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

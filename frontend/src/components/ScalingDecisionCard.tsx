@@ -1,112 +1,123 @@
 import React from 'react';
 import { ScalingDecision } from '../types';
-import { Server, ArrowUpRight, ArrowDownRight, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Server, ArrowUpRight, ArrowDownRight, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
 
 interface ScalingDecisionCardProps {
   scaling: ScalingDecision | null;
 }
 
 export const ScalingDecisionCard: React.FC<ScalingDecisionCardProps> = ({ scaling }) => {
-  const getBadgeStyle = (decision?: string) => {
+  const getActionDetails = (decision?: string) => {
     switch (decision) {
       case 'SCALE UP':
         return {
-          bg: 'bg-rose-950/50 border-rose-600 text-rose-300',
-          badge: 'bg-rose-600 text-white',
+          title: 'High Load Ahead — Scale Up (+1 Server)',
+          badgeText: 'SCALE UP REQUIRED',
+          containerClass: 'bg-rose-950/20 border-rose-500/40 text-rose-300',
+          badgeClass: 'bg-rose-600 text-white',
           icon: ArrowUpRight,
-          label: 'HIGH LOAD THRESHOLD EXCEEDED'
+          headline: 'High Workload Expected',
+          description:
+            'Forecasted CPU exceeds your safe 75% ceiling. Spin up an additional server instance now to maintain fast response times.'
         };
       case 'SCALE DOWN':
         return {
-          bg: 'bg-amber-950/50 border-amber-600 text-amber-300',
-          badge: 'bg-amber-600 text-white',
+          title: 'Low Traffic — Scale Down (-1 Server)',
+          badgeText: 'COST SAVING AVAILABLE',
+          containerClass: 'bg-amber-950/20 border-amber-500/40 text-amber-300',
+          badgeClass: 'bg-amber-600 text-white',
           icon: ArrowDownRight,
-          label: 'UNDERUTILIZATION DETECTED'
+          headline: 'Underutilized Capacity',
+          description:
+            'Forecasted CPU is below your 20% floor. You can safely power down an idle instance to reduce cloud infrastructure costs.'
         };
       case 'NORMAL':
         return {
-          bg: 'bg-emerald-950/50 border-emerald-600 text-emerald-300',
-          badge: 'bg-emerald-600 text-white',
+          title: 'Optimal Server Capacity — No Action Needed',
+          badgeText: 'CAPACITY HEALTHY',
+          containerClass: 'bg-emerald-950/20 border-emerald-500/40 text-emerald-300',
+          badgeClass: 'bg-emerald-600 text-white',
           icon: CheckCircle2,
-          label: 'OPTIMAL RESOURCE CONSUMPTION'
+          headline: 'Inside Target Zone',
+          description:
+            'Forecasted CPU remains comfortably within the safe operational window (20% – 75%). Existing infrastructure is right-sized.'
         };
       default:
         return {
-          bg: 'bg-sky-950/50 border-sky-600 text-sky-300',
-          badge: 'bg-sky-600 text-white',
+          title: 'System Capacity Monitoring',
+          badgeText: 'MONITORING',
+          containerClass: 'bg-slate-950/40 border-slate-800 text-slate-300',
+          badgeClass: 'bg-sky-600 text-white',
           icon: Server,
-          label: 'CONTINUOUS MONITORING'
+          headline: 'Live Monitoring',
+          description: 'Evaluating workload predictions in real-time.'
         };
     }
   };
 
-  const currentStyle = getBadgeStyle(scaling?.decision);
-  const Icon = currentStyle.icon;
+  const action = getActionDetails(scaling?.decision);
+  const ActionIcon = action.icon;
+  const forecastVal = scaling?.forecast_cpu ?? 50;
 
   return (
-    <div className={`rounded-xl border p-5 shadow-sm transition ${currentStyle.bg}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-gray-800/80 gap-2">
-        <div className="flex items-center space-x-2">
-          <Server className="w-5 h-5 text-gray-300" />
-          <h3 className="text-base font-bold text-white tracking-wide">
-            Cloud Scaling Recommendation
-          </h3>
+    <div className={`rounded-2xl border p-6 shadow-sm transition space-y-5 ${action.containerClass}`}>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800/80 gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-white">
+            <ActionIcon className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white tracking-wide">
+              {action.title}
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Proactive capacity guidance powered by moving average predictions
+            </p>
+          </div>
         </div>
-        <span className="text-xs uppercase tracking-wider font-mono text-gray-400">
-          Deterministic Rule Engine
+        <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wider ${action.badgeClass}`}>
+          {action.badgeText}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
-        {/* Main Decision Badge */}
-        <div className="flex flex-col justify-center items-start p-4 bg-gray-950/70 rounded-lg border border-gray-800">
-          <span className="text-[11px] uppercase tracking-wider text-gray-400 mb-1 font-mono">
-            Action Recommendation
-          </span>
-          <div className="flex items-center space-x-2">
-            <span className={`px-3 py-1.5 rounded-lg text-lg font-mono font-extrabold uppercase tracking-wider shadow ${currentStyle.badge}`}>
-              {scaling?.decision || 'MONITOR'}
-            </span>
-            <Icon className="w-6 h-6 shrink-0" />
-          </div>
-          <span className="text-[11px] text-gray-400 mt-2 font-mono">
-            {currentStyle.label}
-          </span>
+      {/* Target Zone Visual Gauge */}
+      <div>
+        <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5 font-medium">
+          <span>Scale Down Zone (&lt;20%)</span>
+          <span className="text-emerald-400 font-bold">Safe Target Zone (20% – 75%)</span>
+          <span className="text-rose-400">Scale Up Zone (&gt;75%)</span>
         </div>
 
-        {/* Forecast vs Threshold Numbers */}
-        <div className="grid grid-cols-2 gap-2 p-3 bg-gray-950/70 rounded-lg border border-gray-800 font-mono">
-          <div>
-            <span className="text-[10px] text-gray-400 uppercase block">Forecast Target</span>
-            <span className="text-xl font-bold text-white">
-              {scaling?.forecast_cpu !== undefined ? `${scaling.forecast_cpu.toFixed(1)}%` : '--'}
-            </span>
-          </div>
-          <div>
-            <span className="text-[10px] text-gray-400 uppercase block">Configured Thresh</span>
-            <span className="text-xl font-bold text-gray-300">
-              {scaling?.threshold !== undefined ? `${scaling.threshold.toFixed(1)}%` : '75.0%'}
-            </span>
-          </div>
-          <div className="col-span-2 pt-2 border-t border-gray-800/80 flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Threshold Delta:</span>
-            <span className={`text-sm font-bold ${
-              (scaling?.difference || 0) > 0 ? 'text-rose-400' : 'text-emerald-400'
-            }`}>
-              {scaling?.difference !== undefined ? `${scaling.difference > 0 ? '+' : ''}${scaling.difference.toFixed(1)}%` : '--'}
-            </span>
-          </div>
+        {/* Triple-color bar */}
+        <div className="relative w-full h-3 rounded-full bg-slate-800 overflow-hidden flex">
+          <div className="w-[20%] bg-amber-500/50" title="Low Utilization Zone" />
+          <div className="w-[55%] bg-emerald-500/50" title="Safe Target Zone" />
+          <div className="w-[25%] bg-rose-500/50" title="High Load Zone" />
+
+          {/* Pointer for current forecasted CPU */}
+          <div
+            className="absolute top-0 bottom-0 w-2.5 bg-white border border-black shadow-lg rounded-full transition-all duration-500 transform -translate-x-1/2"
+            style={{ left: `${Math.min(100, Math.max(0, forecastVal))}%` }}
+            title={`Forecast CPU: ${forecastVal.toFixed(1)}%`}
+          />
         </div>
 
-        {/* Reason / Context */}
-        <div className="p-4 bg-gray-950/70 rounded-lg border border-gray-800 flex flex-col justify-center">
-          <span className="text-[11px] uppercase tracking-wider text-gray-400 mb-1 font-mono">
-            Deterministic Reason
-          </span>
-          <p className="text-xs text-gray-200 leading-relaxed">
-            {scaling?.reason || 'Awaiting forecast evaluation against high/low utilization limits.'}
-          </p>
+        <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1 font-mono">
+          <span>0%</span>
+          <span>20% (Floor)</span>
+          <span className="text-white font-bold">Forecast: {forecastVal.toFixed(1)}%</span>
+          <span>75% (Ceiling)</span>
+          <span>100%</span>
         </div>
+      </div>
+
+      {/* Clear Explanation */}
+      <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs text-slate-300 leading-relaxed">
+        <span className="font-semibold text-white block mb-1">
+          {action.headline}:
+        </span>
+        {action.description}
       </div>
     </div>
   );

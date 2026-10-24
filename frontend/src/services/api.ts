@@ -39,7 +39,10 @@ export function getRawServerUrl(): string {
   if (envUrl && envUrl.trim()) {
     return envUrl.trim().replace(/\/+$/, '');
   }
-  // If running on Vercel without env var, default to window.location.origin or placeholder
+  // When running in local Vite dev (port 5173), direct the agent to backend port 8000
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
   return window.location.origin;
 }
 
