@@ -6,6 +6,7 @@ import { AccuracyPage } from './pages/AccuracyPage';
 import { ScalingPage } from './pages/ScalingPage';
 import { AIInspectorPage } from './pages/AIInspectorPage';
 import { AboutPage } from './pages/AboutPage';
+import { ConnectDataModal } from './components/ConnectDataModal';
 
 import {
   MonitorStatus,
@@ -44,6 +45,7 @@ export const App: React.FC = () => {
   const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
   const [isLoadingMonitor, setIsLoadingMonitor] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState<boolean>(false);
 
   // Load initial health & config
   const checkSystemHealth = useCallback(async () => {
@@ -224,6 +226,7 @@ export const App: React.FC = () => {
         isLiveRunning={monitorStatus?.is_running ?? false}
         aiStatus={aiStatus}
         currentCpu={forecastData?.current_cpu ?? monitorStatus?.current_cpu ?? null}
+        onOpenConnectModal={() => setIsConnectModalOpen(true)}
       />
 
       {/* Global Error Banner */}
@@ -233,6 +236,14 @@ export const App: React.FC = () => {
             <div className="flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
               <span>{errorMessage}</span>
+              {errorMessage.includes('Insufficient') && (
+                <button
+                  onClick={() => setIsConnectModalOpen(true)}
+                  className="ml-2 px-2 py-0.5 rounded bg-sky-900/60 hover:bg-sky-800 text-sky-200 border border-sky-600/50 font-medium text-[11px] transition"
+                >
+                  📡 Connect Machine / Upload Data
+                </button>
+              )}
             </div>
             <button
               onClick={() => setErrorMessage(null)}
@@ -267,6 +278,7 @@ export const App: React.FC = () => {
             onStopMonitoring={handleStopMonitoring}
             onClearMonitoring={handleClearMonitoring}
             onRefreshMonitoring={handleRefreshMonitoring}
+            onOpenConnectModal={() => setIsConnectModalOpen(true)}
             onRunForecast={handleRunForecast}
             onCompareMethods={() => setActiveTab('accuracy')}
             onGenerateSimulation={handleGenerateSimulation}
@@ -356,6 +368,16 @@ export const App: React.FC = () => {
           </span>
         </div>
       </footer>
+
+      {/* Connect Machine / Telemetry Modal */}
+      <ConnectDataModal
+        isOpen={isConnectModalOpen}
+        onClose={() => setIsConnectModalOpen(false)}
+        onDataIngested={() => {
+          setSource('LIVE');
+          handleRunForecast();
+        }}
+      />
     </div>
   );
 };

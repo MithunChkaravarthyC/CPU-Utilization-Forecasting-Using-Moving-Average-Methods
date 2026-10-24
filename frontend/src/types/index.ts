@@ -94,3 +94,13 @@ export interface ConfigInfo {
   ollama_model: string;
   ollama_status: 'ONLINE' | 'OFFLINE';
 }
+
+export interface SessionStatus {
+  session_id: string;
+  device_name: string | null;
+  is_connected: boolean;
+  total_samples: number;
+  last_sample_time: string | null;
+  current_cpu: number | null;
+}
+

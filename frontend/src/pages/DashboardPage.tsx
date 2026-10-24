@@ -35,6 +35,7 @@ interface DashboardPageProps {
   onStopMonitoring: () => Promise<void>;
   onClearMonitoring: () => Promise<void>;
   onRefreshMonitoring: () => Promise<void>;
+  onOpenConnectModal?: () => void;
   onRunForecast: () => void;
   onCompareMethods: () => void;
   onGenerateSimulation: (duration: '24h' | '3d' | '7d', seed: number) => void;
@@ -66,6 +67,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onStopMonitoring,
   onClearMonitoring,
   onRefreshMonitoring,
+  onOpenConnectModal,
   onRunForecast,
   onCompareMethods,
   onGenerateSimulation,
@@ -104,6 +106,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         onStop={onStopMonitoring}
         onClear={onClearMonitoring}
         onRefresh={onRefreshMonitoring}
+        onOpenConnectModal={onOpenConnectModal}
         isLoading={isLoadingMonitor}
       />
 

@@ -6,7 +6,8 @@ import {
   Server,
   Sparkles,
   BookOpen,
-  Radio
+  Radio,
+  Laptop
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -16,6 +17,7 @@ interface NavbarProps {
   isLiveRunning: boolean;
   aiStatus: 'ONLINE' | 'OFFLINE';
   currentCpu: number | null;
+  onOpenConnectModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -24,7 +26,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   mode,
   isLiveRunning,
   aiStatus,
-  currentCpu
+  currentCpu,
+  onOpenConnectModal
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -59,8 +62,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Status Badges */}
+          {/* Status Badges & Connect Button */}
           <div className="flex items-center space-x-3 text-xs">
+            {/* Connect Machine / Ingest Data Button */}
+            {onOpenConnectModal && (
+              <button
+                onClick={onOpenConnectModal}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900 text-sky-300 border border-sky-600/50 font-medium text-xs transition shadow-sm"
+              >
+                <Laptop className="w-3.5 h-3.5 text-sky-400" />
+                <span className="hidden sm:inline">Connect Machine / Data</span>
+                <span className="sm:hidden">Connect</span>
+              </button>
+            )}
+
             {/* Live CPU indicator */}
             <div className="hidden md:flex items-center space-x-2 px-2.5 py-1 rounded bg-gray-900 border border-gray-800">
               <Radio className={`w-3.5 h-3.5 ${isLiveRunning ? 'text-emerald-400 live-dot' : 'text-gray-500'}`} />

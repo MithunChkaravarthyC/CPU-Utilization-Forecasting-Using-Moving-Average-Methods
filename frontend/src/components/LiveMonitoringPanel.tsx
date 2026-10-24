@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Square, Trash2, Clock, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Play, Square, Trash2, Clock, CheckCircle2, AlertCircle, RefreshCw, Laptop } from 'lucide-react';
 import { MonitorStatus } from '../types';
 
 interface LiveMonitoringPanelProps {
@@ -8,6 +8,7 @@ interface LiveMonitoringPanelProps {
   onStop: () => Promise<void>;
   onClear: () => Promise<void>;
   onRefresh: () => Promise<void>;
+  onOpenConnectModal?: () => void;
   isLoading: boolean;
 }
 
@@ -17,6 +18,7 @@ export const LiveMonitoringPanel: React.FC<LiveMonitoringPanelProps> = ({
   onStop,
   onClear,
   onRefresh,
+  onOpenConnectModal,
   isLoading
 }) => {
   const [intervalSec, setIntervalSec] = useState<number>(60);
@@ -40,12 +42,22 @@ export const LiveMonitoringPanel: React.FC<LiveMonitoringPanelProps> = ({
             </span>
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            Background collector sampling real host metrics via psutil. No unnecessary polling.
+            Real hardware CPU telemetry streamed from your laptop or server via agent or CSV upload.
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onOpenConnectModal && (
+            <button
+              onClick={onOpenConnectModal}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sky-950/90 hover:bg-sky-900 text-sky-300 border border-sky-600/50 text-xs font-medium transition shadow-sm"
+            >
+              <Laptop className="w-3.5 h-3.5 text-sky-400" />
+              <span>Connect Laptop / Upload CSV</span>
+            </button>
+          )}
+
           {!isRunning ? (
             <button
               onClick={() => onStart(intervalSec)}
@@ -53,7 +65,7 @@ export const LiveMonitoringPanel: React.FC<LiveMonitoringPanelProps> = ({
               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition shadow disabled:opacity-50"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Start Monitoring</span>
+              <span>Start Collector</span>
             </button>
           ) : (
             <button
@@ -62,7 +74,7 @@ export const LiveMonitoringPanel: React.FC<LiveMonitoringPanelProps> = ({
               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium transition shadow disabled:opacity-50"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
-              <span>Stop Monitoring</span>
+              <span>Stop Collector</span>
             </button>
           )}
 

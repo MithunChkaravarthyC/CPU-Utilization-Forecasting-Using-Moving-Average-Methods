@@ -1,9 +1,12 @@
 import os
+import io
+import csv
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Query, status
+from fastapi import FastAPI, HTTPException, Query, status, UploadFile, File, Form
+from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 import psutil
 
@@ -14,7 +17,9 @@ from backend.database import (
     get_measurement_count,
     clear_measurements,
     get_latest_measurement,
-    insert_measurement
+    insert_measurement,
+    insert_measurements_batch,
+    get_session_status
 )
 from backend.data_collector import collector
 from backend.data_generator import generate_simulated_cpu_data
@@ -43,7 +48,10 @@ from backend.schemas import (
     ScalingDecision,
     TrendInfo,
     AIExplainRequest,
-    AIExplainResponse
+    AIExplainResponse,
+    TelemetryPushRequest,
+    TelemetryBatchPushRequest,
+    SessionStatusResponse
 )
 
 @asynccontextmanager
@@ -64,16 +72,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Enable CORS for local Vite development
+# Enable CORS for Vercel, localhost, and custom deployments
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -122,35 +125,246 @@ async def monitor_stop():
     return MonitorStatusResponse(**collector.get_status())
 
 @app.post("/api/monitor/clear")
-async def monitor_clear(source: str = Query("LIVE", enum=["LIVE", "SIMULATION", "ALL"])):
+async def monitor_clear(
+    source: str = Query("LIVE", enum=["LIVE", "SIMULATION", "ALL"]),
+    session_id: Optional[str] = Query(None)
+):
     if source == "ALL":
-        clear_measurements()
+        clear_measurements(session_id=session_id)
     else:
-        clear_measurements(source=source)
+        clear_measurements(source=source, session_id=session_id)
     if source in ("LIVE", "ALL"):
         collector.clear_session()
-    return {"message": f"Successfully cleared measurements for source: {source}"}
+    return {"message": f"Successfully cleared measurements for source: {source} (session: {session_id or 'all'})"}
 
 @app.get("/api/monitor/current")
-async def monitor_current():
+async def monitor_current(session_id: Optional[str] = Query(None)):
+    if session_id:
+        latest = get_latest_measurement(source="LIVE", session_id=session_id)
+        if latest:
+            return {
+                "current_cpu": round(float(latest["cpu_utilization"]), 1),
+                "timestamp": latest["timestamp"],
+                "device_name": latest.get("device_name", "Remote Agent")
+            }
     cpu = psutil.cpu_percent(interval=0.1)
     return {
         "current_cpu": round(cpu, 1),
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "device_name": "Host Machine"
     }
+
+# -------------------------------------------------------------
+# TELEMETRY & LIVE MACHINE STREAMING ENDPOINTS
+# -------------------------------------------------------------
+
+@app.post("/api/telemetry/push")
+async def telemetry_push(req: TelemetryPushRequest):
+    """
+    Ingests real-time CPU utilization sent by user's laptop or server agent.
+    """
+    now_str = req.timestamp or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    device = req.device_name or "Remote Machine"
+    rec_id = insert_measurement(
+        timestamp=now_str,
+        cpu_utilization=req.cpu_utilization,
+        source=req.source,
+        session_id=req.session_id,
+        device_name=device
+    )
+    return {
+        "status": "success",
+        "id": rec_id,
+        "session_id": req.session_id,
+        "device_name": device,
+        "cpu_utilization": req.cpu_utilization,
+        "timestamp": now_str
+    }
+
+@app.post("/api/telemetry/batch")
+async def telemetry_batch(req: TelemetryBatchPushRequest):
+    """
+    Ingests multiple timestamped CPU utilization records in one request.
+    """
+    cleaned = []
+    device = req.device_name or "Remote Machine"
+    for r in req.records:
+        ts = r.get("timestamp") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cpu = float(r.get("cpu_utilization", 0.0))
+        cleaned.append({
+            "timestamp": ts,
+            "cpu_utilization": cpu,
+            "source": r.get("source", "LIVE"),
+            "session_id": req.session_id,
+            "device_name": device
+        })
+    insert_measurements_batch(cleaned)
+    return {"status": "success", "imported": len(cleaned), "session_id": req.session_id}
+
+@app.post("/api/telemetry/upload-csv")
+async def upload_telemetry_csv(
+    file: UploadFile = File(...),
+    session_id: str = Form("default"),
+    device_name: str = Form("Uploaded Dataset"),
+    clear_existing: bool = Form(True)
+):
+    """
+    Parses and ingests an uploaded CSV/log file containing server or laptop CPU metrics.
+    Automatically detects timestamp and CPU utilization columns.
+    """
+    try:
+        raw_bytes = await file.read()
+        text_content = raw_bytes.decode("utf-8-sig", errors="replace")
+        lines = [l for l in text_content.splitlines() if l.strip()]
+        if not lines:
+            raise HTTPException(status_code=400, detail="The uploaded CSV file is empty.")
+
+        # Detect delimiter
+        sample_line = lines[0]
+        delimiter = "\t" if "\t" in sample_line else (";" if ";" in sample_line and "," not in sample_line else ",")
+
+        reader = csv.reader(lines, delimiter=delimiter)
+        header = next(reader, None)
+        if not header:
+            raise HTTPException(status_code=400, detail="The uploaded file has no header row.")
+
+        header = [h.strip() for h in header]
+
+        # 1. Identify CPU column index
+        cpu_col_idx = None
+        for i, col in enumerate(header):
+            c_lower = col.lower()
+            if any(k in c_lower for k in ["cpu", "util", "usage", "load", "percent", "%", "value"]):
+                cpu_col_idx = i
+                break
+
+        # 2. Identify Timestamp column index
+        ts_col_idx = None
+        for i, col in enumerate(header):
+            c_lower = col.lower()
+            if any(k in c_lower for k in ["time", "date", "clock", "stamp"]):
+                ts_col_idx = i
+                break
+
+        rows = list(reader)
+        # Fallback if no CPU column name matched: find first column with valid numeric floats
+        if cpu_col_idx is None:
+            for c_idx in range(len(header)):
+                if c_idx == ts_col_idx:
+                    continue
+                valid_num = True
+                for row in rows[:10]:
+                    if c_idx < len(row):
+                        clean_item = row[c_idx].strip().rstrip("%")
+                        try:
+                            float(clean_item)
+                        except ValueError:
+                            valid_num = False
+                            break
+                if valid_num:
+                    cpu_col_idx = c_idx
+                    break
+
+        if cpu_col_idx is None:
+            raise HTTPException(status_code=400, detail="Could not detect a numeric CPU utilization column in the CSV.")
+
+        records = []
+        now = datetime.now()
+        total_rows = len(rows)
+
+        for idx, row in enumerate(rows):
+            if cpu_col_idx >= len(row):
+                continue
+            raw_val = row[cpu_col_idx].strip().rstrip("%")
+            try:
+                val = float(raw_val)
+            except ValueError:
+                continue
+            val = max(0.0, min(100.0, val))
+
+            if ts_col_idx is not None and ts_col_idx < len(row) and row[ts_col_idx].strip():
+                raw_ts = row[ts_col_idx].strip()
+                ts_str = raw_ts
+                for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d", "%m/%d/%Y %H:%M:%S", "%m/%d/%Y %H:%M"):
+                    try:
+                        parsed_dt = datetime.strptime(raw_ts, fmt)
+                        ts_str = parsed_dt.strftime("%Y-%m-%d %H:%M:%S")
+                        break
+                    except ValueError:
+                        pass
+            else:
+                dt = now - timedelta(minutes=(total_rows - idx))
+                ts_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+
+            records.append({
+                "timestamp": ts_str,
+                "cpu_utilization": round(val, 2),
+                "source": "LIVE",
+                "session_id": session_id,
+                "device_name": device_name
+            })
+
+        if not records:
+            raise HTTPException(status_code=400, detail="No valid numerical CPU rows could be parsed from the file.")
+
+        if clear_existing:
+            clear_measurements(source="LIVE", session_id=session_id)
+
+        insert_measurements_batch(records)
+        return {
+            "status": "success",
+            "message": f"Successfully parsed and ingested {len(records)} measurements from '{file.filename}'.",
+            "imported_count": len(records),
+            "session_id": session_id,
+            "detected_cpu_column": header[cpu_col_idx],
+            "detected_time_column": header[ts_col_idx] if ts_col_idx is not None else "Synthesized (1-min intervals)"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse CSV file: {str(e)}")
+
+@app.get("/api/telemetry/session/{session_id}", response_model=SessionStatusResponse)
+async def get_session_info(session_id: str):
+    """
+    Returns connection health and summary for a visitor's personal streaming session.
+    """
+    info = get_session_status(session_id)
+    return SessionStatusResponse(**info)
+
+@app.get("/api/agent/download")
+async def download_agent_script():
+    """
+    Allows visitors or servers to download the standalone Python agent in 1 click.
+    """
+    agent_path = os.path.join(os.path.dirname(__file__), "agent.py")
+    if not os.path.exists(agent_path):
+        raise HTTPException(status_code=404, detail="Agent script not found on server.")
+    return FileResponse(
+        path=agent_path,
+        filename="agent.py",
+        media_type="text/x-python"
+    )
 
 @app.get("/api/data")
 async def get_data(
     source: str = Query("SIMULATION", enum=["LIVE", "SIMULATION"]),
+    session_id: Optional[str] = Query(None),
     limit: Optional[int] = Query(200, ge=10, le=10000)
 ):
-    measurements = get_measurements(source=source, limit=limit, order="DESC")
+    measurements = get_measurements(
+        source=source,
+        session_id=session_id if (source == "LIVE" and session_id) else None,
+        limit=limit,
+        order="DESC"
+    )
     # Return in chronological order
     measurements.reverse()
     return {
         "source": source,
+        "session_id": session_id,
         "count": len(measurements),
-        "total_records": get_measurement_count(source=source),
+        "total_records": get_measurement_count(source=source, session_id=session_id if (source == "LIVE" and session_id) else None),
         "data": measurements
     }
 
@@ -197,13 +411,20 @@ def get_horizon_resolution_steps(horizon: str, resolution: str) -> tuple[int, in
 
 @app.post("/api/forecast", response_model=ForecastResponse)
 async def create_forecast(req: ForecastRequest):
-    # Fetch historical data for requested source
-    # For computation, we fetch up to the last 288 records (or all available)
-    raw_measurements = get_measurements(source=req.source, limit=288, order="DESC")
+    # Fetch historical data for requested source and session
+    raw_measurements = get_measurements(
+        source=req.source,
+        session_id=req.session_id if (req.source == "LIVE" and req.session_id) else None,
+        limit=288,
+        order="DESC"
+    )
     if not raw_measurements or len(raw_measurements) < req.window:
+        err_msg = f"Insufficient historical data for this forecast configuration. Required window: {req.window} observations, available: {len(raw_measurements)}."
+        if req.source == "LIVE":
+            err_msg += f" (Session: '{req.session_id or 'default'}'). Please keep your telemetry agent running or upload a CPU CSV dataset."
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Insufficient historical data for this forecast configuration. Required window: {req.window} observations, available: {len(raw_measurements)}."
+            detail=err_msg
         )
 
     raw_measurements.reverse()
@@ -312,13 +533,19 @@ async def create_forecast(req: ForecastRequest):
 
 @app.post("/api/forecast/compare")
 async def forecast_window_comparison(
-    source: str = Query("SIMULATION", enum=["LIVE", "SIMULATION"])
+    source: str = Query("SIMULATION", enum=["LIVE", "SIMULATION"]),
+    session_id: Optional[str] = Query(None)
 ):
-    measurements = get_measurements(source=source, limit=500, order="DESC")
+    measurements = get_measurements(
+        source=source,
+        session_id=session_id if (source == "LIVE" and session_id) else None,
+        limit=500,
+        order="DESC"
+    )
     if not measurements or len(measurements) < 5:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Insufficient historical data to perform window size comparison. Please generate simulation data or collect live samples."
+            detail="Insufficient historical data to perform window size comparison. Please generate simulation data or stream live samples."
         )
     measurements.reverse()
     cpu_values = [float(m["cpu_utilization"]) for m in measurements]
@@ -326,6 +553,7 @@ async def forecast_window_comparison(
     window_results = compare_window_sizes(cpu_values, windows=[3, 5, 7, 15, 30, 60])
     return {
         "source": source,
+        "session_id": session_id,
         "sample_count": len(cpu_values),
         "windows": window_results
     }
@@ -333,9 +561,15 @@ async def forecast_window_comparison(
 @app.get("/api/metrics")
 async def get_metrics(
     source: str = Query("SIMULATION", enum=["LIVE", "SIMULATION"]),
+    session_id: Optional[str] = Query(None),
     window: int = Query(5, ge=2, le=60)
 ):
-    measurements = get_measurements(source=source, limit=500, order="DESC")
+    measurements = get_measurements(
+        source=source,
+        session_id=session_id if (source == "LIVE" and session_id) else None,
+        limit=500,
+        order="DESC"
+    )
     if not measurements or len(measurements) < window:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -346,6 +580,7 @@ async def get_metrics(
     metrics, best_method, reason = run_historical_backtest(cpu_values, window)
     return {
         "source": source,
+        "session_id": session_id,
         "window": window,
         "metrics": metrics,
         "best_method": best_method,
@@ -355,9 +590,15 @@ async def get_metrics(
 @app.get("/api/backtest")
 async def get_backtest(
     source: str = Query("SIMULATION", enum=["LIVE", "SIMULATION"]),
+    session_id: Optional[str] = Query(None),
     window: int = Query(5, ge=2, le=60)
 ):
-    measurements = get_measurements(source=source, limit=500, order="DESC")
+    measurements = get_measurements(
+        source=source,
+        session_id=session_id if (source == "LIVE" and session_id) else None,
+        limit=500,
+        order="DESC"
+    )
     if not measurements or len(measurements) < window:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -368,6 +609,7 @@ async def get_backtest(
     metrics, best_method, reason = run_historical_backtest(cpu_values, window)
     return {
         "source": source,
+        "session_id": session_id,
         "window": window,
         "metrics": metrics,
         "best_method": best_method,

@@ -18,6 +18,8 @@ class MeasurementItem(BaseModel):
     timestamp: str
     cpu_utilization: float
     source: Literal["LIVE", "SIMULATION"]
+    session_id: Optional[str] = "default"
+    device_name: Optional[str] = "Local Machine"
 
 class GenerateDataRequest(BaseModel):
     duration: Literal["24h", "3d", "7d"] = "24h"
@@ -28,9 +30,30 @@ class ForecastRequest(BaseModel):
     horizon: Literal["1h", "6h", "12h", "24h"] = "6h"
     window: int = Field(default=5, ge=2, le=60)
     source: Literal["LIVE", "SIMULATION"] = "SIMULATION"
+    session_id: Optional[str] = "default"
     resolution: Literal["auto", "fine", "standard"] = "auto"
     high_threshold: Optional[float] = 75.0
     low_threshold: Optional[float] = 20.0
+
+class TelemetryPushRequest(BaseModel):
+    session_id: str
+    cpu_utilization: float = Field(ge=0.0, le=100.0)
+    timestamp: Optional[str] = None
+    device_name: Optional[str] = "My Machine"
+    source: Literal["LIVE", "SIMULATION"] = "LIVE"
+
+class TelemetryBatchPushRequest(BaseModel):
+    session_id: str
+    device_name: Optional[str] = "My Machine"
+    records: List[Dict[str, Any]]
+
+class SessionStatusResponse(BaseModel):
+    session_id: str
+    device_name: Optional[str] = None
+    is_connected: bool
+    total_samples: int
+    last_sample_time: Optional[str] = None
+    current_cpu: Optional[float] = None
 
 class AccuracyMetricItem(BaseModel):
     method: Literal["SMA", "WMA", "EMA"]
