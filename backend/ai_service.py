@@ -64,19 +64,22 @@ def generate_deterministic_fallback(evidence: Dict[str, Any]) -> str:
 
 async def check_ollama_status() -> Tuple[bool, str]:
     """
-    Checks if local Ollama daemon is reachable and whether the target model is present.
+    Checks if Cloud LLM (Groq) or local Ollama daemon is reachable.
     """
+    # 1. Prioritize Cloud LLM (Groq API) if API key is provided
+    if settings.effective_groq_key:
+        return True, "qwen3.8:27b (Groq Cloud)"
+
+    # 2. Check local Ollama daemon
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
             resp = await client.get(f"{settings.ollama_endpoint}/api/tags")
             if resp.status_code == 200:
                 data = resp.json()
                 models = [m.get("name", "") for m in data.get("models", [])]
-                # Look for qwen3:8b, or any qwen variant
                 target = settings.ollama_model
                 matched_model = next((m for m in models if target in m), None)
                 if not matched_model and models:
-                    # Check if any qwen model is available
                     qwen_found = next((m for m in models if "qwen" in m.lower()), models[0])
                     return True, qwen_found
                 return True, target if matched_model else (models[0] if models else target)
@@ -86,71 +89,100 @@ async def check_ollama_status() -> Tuple[bool, str]:
 
 async def generate_explanation(evidence: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Requests an explanation from Ollama Qwen3 8B.
-    Falls back gracefully to deterministic Python explanation if Ollama is offline or errors.
+    Requests an explanation from Cloud Groq LLM (Qwen 3.8 27B) or local Ollama.
+    Falls back gracefully to deterministic Python explanation if services are offline or error.
     """
     start_time = time.time()
-    is_online, active_model = await check_ollama_status()
-    
-    if not is_online:
-        fallback_text = generate_deterministic_fallback(evidence)
-        elapsed_ms = round((time.time() - start_time) * 1000, 2)
-        return {
-            "status": "OFFLINE",
-            "model": settings.ollama_model,
-            "explanation": fallback_text,
-            "response_time_ms": elapsed_ms,
-            "is_fallback": True,
-            "input_evidence": evidence
-        }
-
-    # Prepare compact structured prompt
     user_prompt = f"Please interpret and explain the following calculated forecasting results:\n\n{json.dumps(evidence, indent=2)}"
-    
-    payload = {
-        "model": active_model,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt}
-        ],
-        "stream": False,
-        "options": {
-            "temperature": 0.2,
-            "num_predict": 220
+
+    # 1. Cloud AI via Groq (Ultra-fast, zero-host overhead)
+    groq_key = settings.effective_groq_key
+    if groq_key:
+        try:
+            headers = {
+                "Authorization": f"Bearer {groq_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": settings.groq_model,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "temperature": 0.2,
+                "max_tokens": 250
+            }
+            async with httpx.AsyncClient(timeout=settings.groq_timeout_seconds) as client:
+                resp = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers=headers,
+                    json=payload
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    choices = data.get("choices", [])
+                    if choices:
+                        content = choices[0].get("message", {}).get("content", "").strip()
+                        if content:
+                            elapsed_ms = round((time.time() - start_time) * 1000, 2)
+                            return {
+                                "status": "ONLINE",
+                                "model": "qwen3.8:27b (Groq Cloud)",
+                                "explanation": content,
+                                "response_time_ms": elapsed_ms,
+                                "is_fallback": False,
+                                "input_evidence": evidence
+                            }
+        except Exception:
+            # Fall through to Ollama / deterministic fallback
+            pass
+
+    # 2. Local Ollama fallback
+    is_online, active_model = await check_ollama_status()
+    if is_online and not groq_key:
+        ollama_payload = {
+            "model": active_model,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt}
+            ],
+            "stream": False,
+            "options": {
+                "temperature": 0.2,
+                "num_predict": 220
+            }
         }
-    }
-    
-    try:
-        async with httpx.AsyncClient(timeout=settings.ollama_timeout_seconds) as client:
-            resp = await client.post(
-                f"{settings.ollama_endpoint}/api/chat",
-                json=payload
-            )
-            elapsed_ms = round((time.time() - start_time) * 1000, 2)
-            
-            if resp.status_code == 200:
-                result = resp.json()
-                text = result.get("message", {}).get("content", "").strip()
-                if text:
-                    return {
-                        "status": "ONLINE",
-                        "model": active_model,
-                        "explanation": text,
-                        "response_time_ms": elapsed_ms,
-                        "is_fallback": False,
-                        "input_evidence": evidence
-                    }
-    except Exception:
-        # Fall back cleanly
-        pass
-        
+        try:
+            async with httpx.AsyncClient(timeout=settings.ollama_timeout_seconds) as client:
+                resp = await client.post(
+                    f"{settings.ollama_endpoint}/api/chat",
+                    json=ollama_payload
+                )
+                if resp.status_code == 200:
+                    result = resp.json()
+                    text = result.get("message", {}).get("content", "").strip()
+                    if text:
+                        elapsed_ms = round((time.time() - start_time) * 1000, 2)
+                        return {
+                            "status": "ONLINE",
+                            "model": active_model,
+                            "explanation": text,
+                            "response_time_ms": elapsed_ms,
+                            "is_fallback": False,
+                            "input_evidence": evidence
+                        }
+        except Exception:
+            pass
+
+    # 3. Deterministic mathematical explanation fallback
     fallback_text = generate_deterministic_fallback(evidence)
     elapsed_ms = round((time.time() - start_time) * 1000, 2)
     return {
         "status": "OFFLINE",
-        "model": active_model,
+        "model": "qwen3:8b",
         "explanation": fallback_text,
         "response_time_ms": elapsed_ms,
         "is_fallback": True,
         "input_evidence": evidence
     }
+
