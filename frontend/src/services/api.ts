@@ -146,13 +146,22 @@ export async function uploadCsvTelemetry(
 }
 
 export function getAgentDownloadUrl(): string {
-  return `${getApiBaseUrl()}/agent/download`;
+  const server = getRawServerUrl();
+  return `${server}/api/agent/download`;
 }
 
-export function getAgentCliCommand(): string {
+export function getAgentCliCommand(osType: 'windows' | 'mac-linux' | 'local' = 'windows'): string {
   const server = getRawServerUrl();
   const sess = getSessionId();
-  return `python agent.py --server ${server} --session ${sess}`;
+  const dlUrl = getAgentDownloadUrl();
+
+  if (osType === 'windows') {
+    return `curl.exe -s "${dlUrl}" -o agent.py; python agent.py --server "${server}" --session "${sess}"`;
+  }
+  if (osType === 'mac-linux') {
+    return `curl -s "${dlUrl}" -o agent.py && python3 agent.py --server "${server}" --session "${sess}"`;
+  }
+  return `python backend/agent.py --server "${server}" --session "${sess}"`;
 }
 
 export async function fetchData(source: 'LIVE' | 'SIMULATION' = 'SIMULATION', limit: number = 200): Promise<any> {

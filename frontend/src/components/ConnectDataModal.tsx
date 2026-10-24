@@ -41,6 +41,7 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
   onDataIngested
 }) => {
   const [activeTab, setActiveTab] = useState<'agent' | 'upload' | 'server'>('agent');
+  const [osType, setOsType] = useState<'windows' | 'mac-linux' | 'local'>('windows');
   const [sessionId, setSessionIdState] = useState<string>(getSessionId());
   const [copied, setCopied] = useState(false);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
@@ -88,7 +89,7 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
   };
 
   const handleCopyCommand = () => {
-    const cmd = getAgentCliCommand();
+    const cmd = getAgentCliCommand(osType);
     navigator.clipboard.writeText(cmd);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -274,12 +275,50 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-300 block mb-1.5">
-                  Step 1: Run this 1-line command in your Terminal or PowerShell:
-                </label>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                  <label className="text-xs font-semibold text-gray-300">
+                    Step 1: Choose your environment and copy the 1-line command:
+                  </label>
+                  <div className="flex items-center space-x-1.5 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setOsType('windows')}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition ${
+                        osType === 'windows'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Windows (PowerShell)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOsType('mac-linux')}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition ${
+                        osType === 'mac-linux'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Mac / Linux
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOsType('local')}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition ${
+                        osType === 'local'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Local Repo
+                    </button>
+                  </div>
+                </div>
+
                 <div className="relative group">
-                  <pre className="bg-black/80 border border-gray-800 text-emerald-400 font-mono text-xs p-3.5 rounded-xl overflow-x-auto selection:bg-emerald-900">
-                    {getAgentCliCommand()}
+                  <pre className="bg-black/80 border border-gray-800 text-emerald-400 font-mono text-xs p-3.5 rounded-xl overflow-x-auto selection:bg-emerald-900 break-all whitespace-pre-wrap">
+                    {getAgentCliCommand(osType)}
                   </pre>
                   <button
                     onClick={handleCopyCommand}
@@ -298,6 +337,11 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                     )}
                   </button>
                 </div>
+                <p className="text-[11px] text-slate-400 mt-1.5">
+                  {osType === 'windows' && 'Automatically downloads agent.py into your current folder and starts streaming.'}
+                  {osType === 'mac-linux' && 'Fetches agent.py via curl and streams metrics every 5 seconds.'}
+                  {osType === 'local' && 'Runs backend/agent.py directly from your cloned project directory.'}
+                </p>
               </div>
 
               <div className="pt-2 border-t border-gray-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
