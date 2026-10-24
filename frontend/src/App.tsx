@@ -321,6 +321,8 @@ export const App: React.FC = () => {
             isAutoRefresh={isAutoRefresh}
             setIsAutoRefresh={setIsAutoRefresh}
             lastSyncTime={lastSyncTime}
+            deviceName={sessionStatus?.device_name}
+            sessionStatus={sessionStatus}
           />
         )}
 
