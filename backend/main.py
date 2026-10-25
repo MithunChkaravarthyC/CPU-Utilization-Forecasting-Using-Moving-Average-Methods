@@ -19,7 +19,11 @@ from backend.database import (
     get_latest_measurement,
     insert_measurement,
     insert_measurements_batch,
-    get_session_status
+    get_session_status,
+    create_user,
+    get_user_by_email,
+    get_user_by_session,
+    authenticate_user
 )
 from backend.data_collector import collector
 from backend.data_generator import generate_simulated_cpu_data
@@ -51,7 +55,10 @@ from backend.schemas import (
     AIExplainResponse,
     TelemetryPushRequest,
     TelemetryBatchPushRequest,
-    SessionStatusResponse
+    SessionStatusResponse,
+    RegisterRequest,
+    LoginRequest,
+    UserResponse
 )
 
 @asynccontextmanager
@@ -344,6 +351,102 @@ async def download_agent_script():
         path=agent_path,
         filename="agent.py",
         media_type="text/x-python"
+    )
+
+@app.get("/api/agent/ps1")
+@app.get("/api/agent/powershell")
+async def download_powershell_agent(
+    session: Optional[str] = Query(None),
+    server: Optional[str] = Query(None)
+):
+    """
+    Returns the native Windows PowerShell CPU telemetry script (Zero Python Required!).
+    If ?session=... or ?server=... are passed, automatically injects them as defaults into the script!
+    """
+    ps1_path = os.path.join(os.path.dirname(__file__), "agent.ps1")
+    if not os.path.exists(ps1_path):
+        raise HTTPException(status_code=404, detail="PowerShell agent script not found on server.")
+    
+    with open(ps1_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Pre-inject session ID and server URL into the script if supplied in query params
+    if session:
+        content = content.replace('[string]$Session = "default"', f'[string]$Session = "{session}"')
+    if server:
+        content = content.replace('[string]$Server = "http://localhost:8000"', f'[string]$Server = "{server.rstrip("/")}"')
+    
+    return PlainTextResponse(content, media_type="text/plain; charset=utf-8")
+
+# -------------------------------------------------------------
+# USER AUTHENTICATION & MULTI-TENANT ISOLATION
+# -------------------------------------------------------------
+
+@app.post("/api/auth/register", response_model=UserResponse)
+async def auth_register(req: RegisterRequest):
+    """
+    Creates a new user account with a dedicated unique session ID.
+    Guarantees private, isolated CPU telemetry for every user.
+    """
+    email = req.email.strip().lower()
+    if "@" not in email or "." not in email:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+
+    existing = get_user_by_email(email)
+    if existing:
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please log in.")
+
+    user = create_user(email=email, password=req.password, full_name=req.full_name)
+    token = user["session_id"]
+    return UserResponse(
+        id=user["id"],
+        email=user["email"],
+        full_name=user["full_name"],
+        session_id=user["session_id"],
+        created_at=user["created_at"],
+        token=token
+    )
+
+@app.post("/api/auth/login", response_model=UserResponse)
+async def auth_login(req: LoginRequest):
+    """
+    Authenticates existing user and returns their isolated session ID.
+    """
+    email = req.email.strip().lower()
+    user = authenticate_user(email=email, password=req.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password. Please verify your credentials.")
+
+    token = user["session_id"]
+    return UserResponse(
+        id=user["id"],
+        email=user["email"],
+        full_name=user["full_name"],
+        session_id=user["session_id"],
+        created_at=user["created_at"],
+        token=token
+    )
+
+@app.get("/api/auth/me", response_model=UserResponse)
+async def auth_me(session_id: Optional[str] = Query(None)):
+    """
+    Returns profile information for the current user's session ID.
+    """
+    if not session_id:
+        raise HTTPException(status_code=401, detail="Session ID or authentication required.")
+    user = get_user_by_session(session_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User account session not found.")
+
+    return UserResponse(
+        id=user["id"],
+        email=user["email"],
+        full_name=user["full_name"],
+        session_id=user["session_id"],
+        created_at=user["created_at"],
+        token=user["session_id"]
     )
 
 @app.get("/api/data")

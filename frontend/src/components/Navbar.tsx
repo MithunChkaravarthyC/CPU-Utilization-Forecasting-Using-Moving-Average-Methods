@@ -7,8 +7,12 @@ import {
   Sparkles,
   BookOpen,
   Radio,
-  Laptop
+  Laptop,
+  User as UserIcon,
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
+import { User } from '../types';
 
 interface NavbarProps {
   activeTab: string;
@@ -17,7 +21,10 @@ interface NavbarProps {
   isLiveRunning: boolean;
   aiStatus: 'ONLINE' | 'OFFLINE';
   currentCpu: number | null;
+  user: User | null;
   onOpenConnectModal?: () => void;
+  onOpenAuthModal?: () => void;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -27,7 +34,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   isLiveRunning,
   aiStatus,
   currentCpu,
-  onOpenConnectModal
+  user,
+  onOpenConnectModal,
+  onOpenAuthModal,
+  onLogout
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: BarChart3 },
@@ -49,7 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <div className="w-10 h-10 rounded-xl bg-white text-black p-0.5 shadow-md flex items-center justify-center transition group-hover:scale-105">
               <div className="w-full h-full bg-black rounded-[10px] flex items-center justify-center text-white">
-                <Cpu className="w-5 h-5 animate-pulse" />
+                <Cpu className="w-5 h-5 animate-pulse text-cyan-400" />
               </div>
             </div>
             <div>
@@ -68,12 +78,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Right Header Status & Action Buttons */}
-          <div className="flex items-center space-x-2.5 text-xs">
+          <div className="flex items-center space-x-2 text-xs">
             {/* Connect Machine / Ingest Data Button */}
             {onOpenConnectModal && (
               <button
                 onClick={onOpenConnectModal}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs shadow-sm transition"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs shadow-sm transition"
               >
                 <Laptop className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Connect Machine</span>
@@ -82,7 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             {/* Live CPU indicator */}
-            <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800">
+            <div className="hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800">
               <Radio
                 className={`w-3.5 h-3.5 ${
                   isLiveRunning ? 'text-white live-dot' : 'text-neutral-500'
@@ -96,26 +106,41 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Mode badge */}
             <div
-              className={`px-2.5 py-1 rounded-xl border text-xs font-semibold ${
+              className={`hidden sm:block px-2.5 py-1 rounded-xl border text-xs font-semibold ${
                 mode === 'LIVE'
-                  ? 'bg-neutral-900 text-white border-neutral-700'
+                  ? 'bg-neutral-900 text-cyan-400 border-cyan-800/80'
                   : 'bg-neutral-950 text-neutral-300 border-neutral-800'
               }`}
             >
               {mode === 'LIVE' ? 'LIVE STREAM' : 'DEMO TRAFFIC'}
             </div>
 
-            {/* AI Status badge */}
-            <div
-              className={`hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-xl border text-xs font-semibold ${
-                aiStatus === 'ONLINE'
-                  ? 'bg-neutral-900 text-white border-neutral-700'
-                  : 'bg-neutral-950 text-neutral-400 border-neutral-800'
-              }`}
-            >
-              <Sparkles className="w-3 h-3 text-white" />
-              <span>AI {aiStatus}</span>
-            </div>
+            {/* User Account / Auth Button */}
+            {user ? (
+              <div className="flex items-center space-x-1.5 bg-neutral-900 border border-neutral-800 pl-2.5 pr-1.5 py-1 rounded-xl">
+                <div className="flex items-center space-x-1.5 max-w-[130px] sm:max-w-[180px] truncate text-neutral-200">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="font-medium truncate text-xs" title={user.email}>
+                    {user.full_name || user.email.split('@')[0]}
+                  </span>
+                </div>
+                <button
+                  onClick={onLogout}
+                  title="Sign out"
+                  className="p-1 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-neutral-800 transition"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenAuthModal}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-xs border border-neutral-700 transition"
+              >
+                <UserIcon className="w-3.5 h-3.5 text-neutral-300" />
+                <span>Log In / Sign Up</span>
+              </button>
+            )}
           </div>
         </div>
 

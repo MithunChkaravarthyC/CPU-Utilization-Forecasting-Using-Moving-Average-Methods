@@ -1,4 +1,7 @@
 import sqlite3
+import hashlib
+import secrets
+import uuid
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from backend.config import DB_PATH
@@ -31,7 +34,95 @@ def init_db():
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_source_timestamp ON cpu_measurements (source, timestamp)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_session_source ON cpu_measurements (session_id, source, timestamp)")
+
+        # Users table for isolated user telemetry & authentication
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                full_name TEXT DEFAULT '',
+                session_id TEXT UNIQUE NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_session ON users (session_id)")
         conn.commit()
+
+# -------------------------------------------------------------
+# User Authentication & Security Helpers
+# -------------------------------------------------------------
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000)
+    return f"{salt}:{key.hex()}"
+
+def verify_password(stored_password: str, provided_password: str) -> bool:
+    try:
+        if ":" not in stored_password:
+            return False
+        salt, key_hex = stored_password.split(":")
+        new_key = hashlib.pbkdf2_hmac("sha256", provided_password.encode("utf-8"), salt.encode("utf-8"), 100000)
+        return secrets.compare_digest(new_key.hex(), key_hex)
+    except Exception:
+        return False
+
+def create_user(email: str, password: str, full_name: Optional[str] = None) -> Dict[str, Any]:
+    email_clean = email.strip().lower()
+    hashed = hash_password(password)
+    # Generate unique user session token (e.g., usr_a1b2c3d4e5f6)
+    session_id = f"usr_{uuid.uuid4().hex[:12]}"
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO users (email, password_hash, full_name, session_id, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (email_clean, hashed, (full_name or "").strip(), session_id, now_str)
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+        return {
+            "id": user_id,
+            "email": email_clean,
+            "full_name": (full_name or "").strip(),
+            "session_id": session_id,
+            "created_at": now_str
+        }
+
+def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    email_clean = email.strip().lower()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, email, password_hash, full_name, session_id, created_at FROM users WHERE email = ?", (email_clean,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def get_user_by_session(session_id: str) -> Optional[Dict[str, Any]]:
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, email, full_name, session_id, created_at FROM users WHERE session_id = ?", (session_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
+    user = get_user_by_email(email)
+    if not user:
+        return None
+    if verify_password(user["password_hash"], password):
+        return {
+            "id": user["id"],
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "session_id": user["session_id"],
+            "created_at": user["created_at"]
+        }
+    return None
 
 def insert_measurement(
     timestamp: str,

@@ -12,9 +12,10 @@ import {
   MonitorStatus,
   ForecastResponse,
   AIExplainResponse,
-  SessionStatus
+  SessionStatus,
+  User
 } from '../types';
-import { ChevronDown, ChevronUp, Table, Laptop } from 'lucide-react';
+import { ChevronDown, ChevronUp, Table, Laptop, ShieldCheck, User as UserIcon, Sparkles } from 'lucide-react';
 
 interface DashboardPageProps {
   monitorStatus: MonitorStatus | null;
@@ -51,6 +52,8 @@ interface DashboardPageProps {
   lastSyncTime?: Date;
   deviceName?: string | null;
   sessionStatus?: SessionStatus | null;
+  user?: User | null;
+  onOpenAuthModal?: () => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -87,7 +90,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   setIsAutoRefresh,
   lastSyncTime,
   deviceName,
-  sessionStatus
+  sessionStatus,
+  user,
+  onOpenAuthModal
 }) => {
   const [showLogTable, setShowLogTable] = useState(false);
   const [showLiveMonitor, setShowLiveMonitor] = useState(true);
@@ -103,6 +108,55 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Multi-Tenant Workspace & Isolation Banner */}
+      {user ? (
+        <div className="bg-gradient-to-r from-neutral-950 via-neutral-900 to-neutral-950 border border-neutral-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-950/80 border border-emerald-700/80 flex items-center justify-center text-emerald-400 shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-white text-xs">Private Workspace:</span>
+                <span className="text-emerald-300 font-semibold text-xs">{user.full_name || user.email}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/90 text-emerald-400 border border-emerald-700 font-mono font-bold">
+                  Data Isolated
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-400 mt-0.5">
+                Session Token: <code className="text-cyan-400 font-mono font-bold">{user.session_id}</code> • Telemetry streamed to this token will never clash with other users.
+              </p>
+            </div>
+          </div>
+          {onOpenConnectModal && (
+            <button
+              onClick={onOpenConnectModal}
+              className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs shadow-sm transition flex items-center space-x-1.5 shrink-0 self-start sm:self-auto"
+            >
+              <Laptop className="w-3.5 h-3.5" />
+              <span>Copy PowerShell Command</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2.5 text-xs text-neutral-300">
+            <UserIcon className="w-4 h-4 text-neutral-400 shrink-0" />
+            <span>
+              <strong className="text-white">Guest Session Mode:</strong> Data is isolated to this browser. Log in or create an account to get a permanent token and ensure telemetry never clashes with other machines.
+            </span>
+          </div>
+          {onOpenAuthModal && (
+            <button
+              onClick={onOpenAuthModal}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs shadow-sm transition whitespace-nowrap self-start sm:self-auto"
+            >
+              Log In / Create Account
+            </button>
+          )}
+        </div>
+      )}
+
       {/* 1. Top 4 Crisp Metric Tiles */}
       <TopCards
         currentCpu={currentCpu}

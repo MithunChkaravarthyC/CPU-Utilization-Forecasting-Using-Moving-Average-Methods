@@ -7,12 +7,14 @@ import { ScalingPage } from './pages/ScalingPage';
 import { AIInspectorPage } from './pages/AIInspectorPage';
 import { AboutPage } from './pages/AboutPage';
 import { ConnectDataModal } from './components/ConnectDataModal';
+import { AuthModal } from './components/AuthModal';
 
 import {
   MonitorStatus,
   ForecastResponse,
   AIExplainResponse,
-  SessionStatus
+  SessionStatus,
+  User
 } from './types';
 import {
   fetchHealth,
@@ -25,7 +27,10 @@ import {
   postForecast,
   requestAIExplain,
   fetchSessionStatus,
-  getSessionId
+  getSessionId,
+  getStoredUser,
+  logoutUser,
+  fetchCurrentUser
 } from './services/api';
 import { AlertCircle, X } from 'lucide-react';
 
@@ -37,6 +42,10 @@ export const App: React.FC = () => {
   const [resolution, setResolution] = useState<'auto' | 'fine' | 'standard'>('auto');
   const [highThreshold, setHighThreshold] = useState<number>(75.0);
   const [lowThreshold, setLowThreshold] = useState<number>(20.0);
+
+  // User Authentication & Multi-Tenant State
+  const [user, setUser] = useState<User | null>(getStoredUser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   const [monitorStatus, setMonitorStatus] = useState<MonitorStatus | null>(null);
   const [forecastData, setForecastData] = useState<ForecastResponse | null>(null);
@@ -213,9 +222,25 @@ export const App: React.FC = () => {
     }
   };
 
+  // User Authentication Handlers
+  const handleLoginSuccess = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    setSource('LIVE');
+    handleRunForecast(false);
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    setUser(null);
+    handleRunForecast(false);
+  };
+
   // Initial load
   useEffect(() => {
     checkSystemHealth();
+    fetchCurrentUser().then((u) => {
+      if (u) setUser(u);
+    });
     handleRunForecast();
   }, []);
 
@@ -256,7 +281,10 @@ export const App: React.FC = () => {
         isLiveRunning={monitorStatus?.is_running ?? false}
         aiStatus={aiStatus}
         currentCpu={forecastData?.current_cpu ?? monitorStatus?.current_cpu ?? null}
+        user={user}
         onOpenConnectModal={() => setIsConnectModalOpen(true)}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Global Error Banner */}
@@ -323,6 +351,8 @@ export const App: React.FC = () => {
             lastSyncTime={lastSyncTime}
             deviceName={sessionStatus?.device_name}
             sessionStatus={sessionStatus}
+            user={user}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />
         )}
 
@@ -409,10 +439,22 @@ export const App: React.FC = () => {
       <ConnectDataModal
         isOpen={isConnectModalOpen}
         onClose={() => setIsConnectModalOpen(false)}
+        user={user}
+        onOpenAuthModal={() => {
+          setIsConnectModalOpen(false);
+          setIsAuthModalOpen(true);
+        }}
         onDataIngested={() => {
           setSource('LIVE');
           handleRunForecast();
         }}
+      />
+
+      {/* User Authentication & Account Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={handleLoginSuccess}
       />
     </div>
   );

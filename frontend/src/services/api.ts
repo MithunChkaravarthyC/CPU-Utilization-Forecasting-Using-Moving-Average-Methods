@@ -7,7 +7,8 @@ import {
   AIExplainResponse,
   ConfigInfo,
   ScalingDecision,
-  SessionStatus
+  SessionStatus,
+  User
 } from '../types';
 
 // Dynamic API Base URL resolver: checks localStorage override, then Vite ENV, then fallback '/api'
@@ -47,11 +48,89 @@ export function getRawServerUrl(): string {
   return window.location.origin;
 }
 
+// -------------------------------------------------------------
+// User Authentication & Multi-Tenant Session Isolation
+// -------------------------------------------------------------
+
+export function getStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem('cpu_forecast_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: User | null): void {
+  if (user) {
+    localStorage.setItem('cpu_forecast_user', JSON.stringify(user));
+    setSessionId(user.session_id);
+  } else {
+    localStorage.removeItem('cpu_forecast_user');
+  }
+}
+
+export function logoutUser(): void {
+  localStorage.removeItem('cpu_forecast_user');
+  const guestId = 'guest_' + Math.random().toString(36).substring(2, 10);
+  setSessionId(guestId);
+}
+
+export async function registerUser(email: string, password: string, fullName?: string): Promise<User> {
+  const res = await fetch(`${getApiBaseUrl()}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, full_name: fullName || '' })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Registration failed');
+  }
+  const user: User = await res.json();
+  setStoredUser(user);
+  return user;
+}
+
+export async function loginUser(email: string, password: string): Promise<User> {
+  const res = await fetch(`${getApiBaseUrl()}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Login failed');
+  }
+  const user: User = await res.json();
+  setStoredUser(user);
+  return user;
+}
+
+export async function fetchCurrentUser(): Promise<User | null> {
+  const stored = getStoredUser();
+  if (!stored) return null;
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/auth/me?session_id=${encodeURIComponent(stored.session_id)}`);
+    if (res.ok) {
+      const user = await res.json();
+      setStoredUser(user);
+      return user;
+    }
+  } catch {
+    // If backend offline, retain stored user session
+  }
+  return stored;
+}
+
 // Client Session ID for isolated multi-device/multi-user live streaming
 export function getSessionId(): string {
+  const user = getStoredUser();
+  if (user && user.session_id) {
+    return user.session_id;
+  }
   let id = localStorage.getItem('cpu_forecast_session_id');
   if (!id) {
-    id = 'client_' + Math.random().toString(36).substring(2, 10);
+    id = 'guest_' + Math.random().toString(36).substring(2, 10);
     localStorage.setItem('cpu_forecast_session_id', id);
   }
   return id;
@@ -146,18 +225,24 @@ export async function uploadCsvTelemetry(
   return res.json();
 }
 
-export function getAgentDownloadUrl(): string {
+export function getAgentDownloadUrl(type: 'python' | 'powershell' = 'python'): string {
   const server = getRawServerUrl();
-  return `${server}/api/agent/download`;
+  return type === 'powershell' ? `${server}/api/agent/ps1` : `${server}/api/agent/download`;
 }
 
-export function getAgentCliCommand(osType: 'windows' | 'mac-linux' | 'local' = 'windows'): string {
+export function getAgentCliCommand(osType: 'windows' | 'windows-file' | 'mac-linux' | 'local' = 'windows'): string {
   const server = getRawServerUrl();
   const sess = getSessionId();
-  const dlUrl = getAgentDownloadUrl();
+  const dlUrl = getAgentDownloadUrl('python');
+  const ps1Url = getAgentDownloadUrl('powershell');
 
   if (osType === 'windows') {
-    return `curl.exe -s "${dlUrl}" -o agent.py; python agent.py --server "${server}" --session "${sess}"`;
+    // Pure native Windows PowerShell - Zero Python required!
+    return `irm "${ps1Url}?session=${sess}&server=${encodeURIComponent(server)}" | iex`;
+  }
+  if (osType === 'windows-file') {
+    // Download agent.ps1 and run via PowerShell with execution policy bypass
+    return `curl.exe -s "${ps1Url}" -o agent.ps1; powershell -ExecutionPolicy Bypass -File .\\agent.ps1 -Server "${server}" -Session "${sess}"`;
   }
   if (osType === 'mac-linux') {
     return `curl -s "${dlUrl}" -o agent.py && python3 agent.py --server "${server}" --session "${sess}"`;

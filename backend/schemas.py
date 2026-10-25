@@ -129,3 +129,20 @@ class AIExplainResponse(BaseModel):
     response_time_ms: float
     is_fallback: bool
     input_evidence: Dict[str, Any]
+
+class RegisterRequest(BaseModel):
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., min_length=6, description="User password (min 6 characters)")
+    full_name: Optional[str] = Field(default="", description="Optional full name or display name")
+
+class LoginRequest(BaseModel):
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., description="User password")
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    full_name: str
+    session_id: str
+    created_at: str
+    token: str

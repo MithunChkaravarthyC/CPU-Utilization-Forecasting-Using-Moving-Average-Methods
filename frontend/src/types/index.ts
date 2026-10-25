@@ -104,3 +104,12 @@ export interface SessionStatus {
   current_cpu: number | null;
 }
 
+export interface User {
+  id: number;
+  email: string;
+  full_name: string;
+  session_id: string;
+  created_at: string;
+  token: string;
+}
+

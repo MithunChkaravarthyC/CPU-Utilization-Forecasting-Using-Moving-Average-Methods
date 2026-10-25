@@ -27,21 +27,26 @@ import {
   uploadCsvTelemetry,
   fetchHealth
 } from '../services/api';
-import { SessionStatus } from '../types';
+import { SessionStatus, User } from '../types';
+import { ShieldCheck, User as UserIcon } from 'lucide-react';
 
 interface ConnectDataModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDataIngested?: () => void;
+  user?: User | null;
+  onOpenAuthModal?: () => void;
 }
 
 export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
   isOpen,
   onClose,
-  onDataIngested
+  onDataIngested,
+  user,
+  onOpenAuthModal
 }) => {
   const [activeTab, setActiveTab] = useState<'agent' | 'upload' | 'server'>('agent');
-  const [osType, setOsType] = useState<'windows' | 'mac-linux' | 'local'>('windows');
+  const [osType, setOsType] = useState<'windows' | 'windows-file' | 'mac-linux' | 'local'>('windows');
   const [sessionId, setSessionIdState] = useState<string>(getSessionId());
   const [copied, setCopied] = useState(false);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
@@ -150,8 +155,14 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-neutral-800 flex items-center justify-between bg-black/40">
           <div className="flex items-center space-x-3">
@@ -181,24 +192,49 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
         {/* Session Status Banner */}
         <div className="px-6 py-3 bg-black border-b border-neutral-800 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center space-x-2">
-            <span className="text-neutral-400">Your Session ID:</span>
-            <code className="bg-neutral-900 text-white font-mono px-2 py-0.5 rounded border border-neutral-700 font-bold">
-              {sessionId}
-            </code>
-            <button
-              onClick={handleRegenerateSession}
-              title="Generate new unique session"
-              className="text-[11px] text-neutral-400 hover:text-white underline"
-            >
-              New ID
-            </button>
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <span className="flex items-center space-x-1 text-emerald-400 font-semibold">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Account:</span>
+                </span>
+                <span className="text-white font-medium">{user.email}</span>
+                <code className="bg-neutral-900 text-cyan-400 font-mono px-2 py-0.5 rounded border border-neutral-700 font-bold text-[11px]">
+                  {sessionId}
+                </code>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <span className="text-neutral-400">Guest Session:</span>
+                <code className="bg-neutral-900 text-white font-mono px-2 py-0.5 rounded border border-neutral-700 font-bold">
+                  {sessionId}
+                </code>
+                {onOpenAuthModal && (
+                  <button
+                    onClick={onOpenAuthModal}
+                    className="ml-2 text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center space-x-1 underline"
+                  >
+                    <span>Sign In for Private Workspace</span>
+                  </button>
+                )}
+              </div>
+            )}
+            {!user && (
+              <button
+                onClick={handleRegenerateSession}
+                title="Generate new unique session"
+                className="text-[11px] text-neutral-400 hover:text-white underline ml-1"
+              >
+                New ID
+              </button>
+            )}
           </div>
 
           {/* Connection Status Pill */}
           <div className="flex items-center space-x-2">
             {sessionStatus?.is_connected ? (
-              <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-600 text-white font-mono">
-                <span className="w-2 h-2 rounded-full bg-white live-dot animate-pulse" />
+              <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-700 text-emerald-300 font-mono">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 live-dot animate-pulse" />
                 <span>
                   Connected: {sessionStatus.device_name || 'Your Machine'} ({sessionStatus.current_cpu}% CPU)
                 </span>
@@ -269,15 +305,20 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
             <div className="space-y-4">
               <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-xs text-neutral-300 leading-relaxed">
                 <span className="font-bold text-white block mb-1">
-                  🔒 Why an Agent is Needed:
+                  🔒 Private Hardware Telemetry:
                 </span>
-                Web browsers are strictly sandboxed for security and cannot directly read your laptop or server's hardware CPU utilization. Running this lightweight script reads real CPU metrics on your machine and streams them directly to your session dashboard!
+                Web browsers are strictly sandboxed and cannot directly query your laptop or server's CPU. Running this lightweight script reads real hardware metrics on your system and streams them directly into your personal forecast workspace!
               </div>
 
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                  <label className="text-xs font-semibold text-neutral-300">
-                    Step 1: Choose your environment and copy the 1-line command:
+                  <label className="text-xs font-semibold text-neutral-300 flex items-center space-x-2">
+                    <span>Step 1: Choose your environment:</span>
+                    {osType === 'windows' && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-400 font-mono text-[10px] font-bold">
+                        Zero Python Needed!
+                      </span>
+                    )}
                   </label>
                   <div className="flex items-center space-x-1.5 bg-neutral-900 p-0.5 rounded-lg border border-neutral-800">
                     <button
@@ -289,7 +330,18 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                           : 'text-neutral-400 hover:text-white'
                       }`}
                     >
-                      Windows (PowerShell)
+                      Windows PowerShell
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOsType('windows-file')}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition ${
+                        osType === 'windows-file'
+                          ? 'bg-white text-black font-bold shadow-sm'
+                          : 'text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      Windows (.ps1 Script)
                     </button>
                     <button
                       type="button"
@@ -317,7 +369,7 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                 </div>
 
                 <div className="relative group">
-                  <pre className="bg-black border border-neutral-800 text-neutral-200 font-mono text-xs p-3.5 rounded-xl overflow-x-auto selection:bg-neutral-800 break-all whitespace-pre-wrap">
+                  <pre className="bg-black border border-neutral-800 text-cyan-300 font-mono text-xs p-3.5 rounded-xl overflow-x-auto selection:bg-neutral-800 break-all whitespace-pre-wrap">
                     {getAgentCliCommand(osType)}
                   </pre>
                   <button
@@ -332,14 +384,15 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                     ) : (
                       <>
                         <Copy className="w-3.5 h-3.5" />
-                        <span>Copy</span>
+                        <span>Copy Command</span>
                       </>
                     )}
                   </button>
                 </div>
                 <p className="text-[11px] text-neutral-400 mt-1.5">
-                  {osType === 'windows' && 'Automatically downloads agent.py into your current folder and starts streaming.'}
-                  {osType === 'mac-linux' && 'Fetches agent.py via curl and streams metrics every 5 seconds.'}
+                  {osType === 'windows' && '⚡ Paste into Windows PowerShell: Streams live CPU instantly using native Windows cmdlets. No Python or installation required!'}
+                  {osType === 'windows-file' && 'Downloads agent.ps1 into your folder and launches with execution policy bypass.'}
+                  {osType === 'mac-linux' && 'Fetches agent.py via curl and streams metrics using Python 3 every 5 seconds.'}
                   {osType === 'local' && 'Runs backend/agent.py directly from your cloned project directory.'}
                 </p>
               </div>
@@ -347,20 +400,30 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
               <div className="pt-2 border-t border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div>
                   <span className="text-neutral-300 font-semibold block">
-                    Don't have curl or prefer downloading?
+                    Want to download the standalone script file?
                   </span>
                   <span className="text-neutral-400">
-                    Download the standalone Python script (zero dependencies, auto-installs psutil).
+                    Save the script directly to your computer or production server.
                   </span>
                 </div>
-                <a
-                  href={getAgentDownloadUrl()}
-                  download="agent.py"
-                  className="inline-flex items-center space-x-2 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-medium border border-neutral-700 transition whitespace-nowrap"
-                >
-                  <Download className="w-3.5 h-3.5 text-white" />
-                  <span>Download agent.py</span>
-                </a>
+                <div className="flex items-center space-x-2">
+                  <a
+                    href={getAgentDownloadUrl('powershell')}
+                    download="agent.ps1"
+                    className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-medium border border-neutral-700 transition whitespace-nowrap text-xs"
+                  >
+                    <Download className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Download agent.ps1</span>
+                  </a>
+                  <a
+                    href={getAgentDownloadUrl('python')}
+                    download="agent.py"
+                    className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-medium border border-neutral-700 transition whitespace-nowrap text-xs"
+                  >
+                    <Download className="w-3.5 h-3.5 text-neutral-300" />
+                    <span>Download agent.py</span>
+                  </a>
+                </div>
               </div>
 
               {/* Live Preview / Status Card */}
