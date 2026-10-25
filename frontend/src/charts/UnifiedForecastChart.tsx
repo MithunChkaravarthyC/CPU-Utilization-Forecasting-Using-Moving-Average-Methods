@@ -68,57 +68,50 @@ export const UnifiedForecastChart: React.FC<UnifiedForecastChartProps> = ({
   const [showModels, setShowModels] = useState<boolean>(false);
   const [showThresholds, setShowThresholds] = useState<boolean>(true);
 
-  // Combine historical and future forecast points cleanly
-  // Historical points (up to last 60 for clean resolution)
+  // Combine historical and future forecast points cleanly with ZERO duplicate points
   const recentHist = historicalData.slice(-60);
   const futurePoints = forecastData.filter((p) => p.is_forecast);
 
-  // Mark future forecast points
-  const combined = [
-    ...recentHist.map((p) => ({
+  // Guarantee 100% unique timestamps via Map deduplication
+  const pointsMap = new Map<string, any>();
+
+  // Add historical points
+  recentHist.forEach((p, idx) => {
+    const isLast = idx === recentHist.length - 1;
+    pointsMap.set(p.timestamp, {
       ...p,
       displayActual: p.actual,
-      predicted: null as number | null
-    })),
-    // Connecting anchor
-    ...(recentHist.length > 0 && futurePoints.length > 0
-      ? [
-          {
-            timestamp: recentHist[recentHist.length - 1].timestamp,
-            displayActual: recentHist[recentHist.length - 1].actual,
-            predicted: recentHist[recentHist.length - 1].actual,
-            sma: recentHist[recentHist.length - 1].sma,
-            wma: recentHist[recentHist.length - 1].wma,
-            ema: recentHist[recentHist.length - 1].ema,
-            is_forecast: false
-          }
-        ]
-      : []),
-    ...futurePoints.map((p) => {
-      // Pick best forecast point
+      // Seamlessly connect the predicted forecast curve from this exact point
+      predicted: isLast && futurePoints.length > 0 ? p.actual : null
+    });
+  });
+
+  // Add future forecast points
+  futurePoints.forEach((p) => {
+    if (!pointsMap.has(p.timestamp)) {
       const bestVal =
         bestMethod === 'SMA'
           ? p.sma
           : bestMethod === 'WMA'
           ? p.wma
           : p.ema;
-      return {
+      pointsMap.set(p.timestamp, {
         ...p,
-        displayActual: null as number | null,
+        displayActual: null,
         predicted: bestVal
-      };
-    })
-  ];
+      });
+    }
+  });
 
+  const combined = Array.from(pointsMap.values());
   const nowTimestamp = recentHist.length > 0 ? recentHist[recentHist.length - 1].timestamp : null;
 
   const formatXAxis = (tickItem: string) => {
     if (!tickItem) return '';
     const parts = tickItem.split(' ');
-    if (parts.length > 1) {
-      return parts[1].substring(0, 5); // HH:mm
-    }
-    return tickItem.substring(0, 5);
+    const timeStr = parts.length > 1 ? parts[1] : tickItem;
+    // Show exact seconds (HH:mm:ss) so high-frequency streams never show repeated minute labels
+    return timeStr.length >= 8 ? timeStr.substring(0, 8) : timeStr.substring(0, 5);
   };
 
   return (

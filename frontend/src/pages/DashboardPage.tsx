@@ -15,7 +15,21 @@ import {
   SessionStatus,
   User
 } from '../types';
-import { ChevronDown, ChevronUp, Table, Laptop, ShieldCheck, User as UserIcon, Sparkles } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Table,
+  Laptop,
+  ShieldCheck,
+  User as UserIcon,
+  Sparkles,
+  Copy,
+  Check,
+  Terminal,
+  Radio,
+  Play
+} from 'lucide-react';
+import { getAgentCliCommand } from '../services/api';
 
 interface DashboardPageProps {
   monitorStatus: MonitorStatus | null;
@@ -96,8 +110,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 }) => {
   const [showLogTable, setShowLogTable] = useState(false);
   const [showLiveMonitor, setShowLiveMonitor] = useState(true);
+  const [copiedCmd, setCopiedCmd] = useState(false);
 
-  const currentCpu = forecastData?.current_cpu ?? monitorStatus?.current_cpu ?? null;
+  const isLiveMode = source === 'LIVE';
+  const hasLiveSamples = (sessionStatus?.total_samples ?? 0) > 0 || (forecastData?.sample_count ?? 0) > 0;
+  const isMachineConnected = Boolean(sessionStatus?.is_connected);
+
+  // In LIVE mode: if machine is not connected and 0 samples have arrived, currentCpu is strictly null (no fake 50%)
+  const currentCpu = isLiveMode
+    ? (hasLiveSamples ? (sessionStatus?.current_cpu ?? forecastData?.current_cpu ?? null) : null)
+    : (forecastData?.current_cpu ?? monitorStatus?.current_cpu ?? null);
+
   const bestForecastValue = forecastData
     ? forecastData.best_method === 'SMA'
       ? forecastData.sma_forecast
@@ -105,6 +128,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       ? forecastData.wma_forecast
       : forecastData.ema_forecast
     : null;
+
+  const pwshCommand = getAgentCliCommand('windows');
+
+  const handleCopyCmd = () => {
+    navigator.clipboard.writeText(pwshCommand);
+    setCopiedCmd(true);
+    setTimeout(() => setCopiedCmd(false), 2000);
+  };
 
   return (
     <div className="space-y-6">
@@ -186,14 +217,135 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         onGenerateSimulation={onGenerateSimulation}
         onOpenConnectModal={onOpenConnectModal}
         isLoading={isLoadingForecast}
-        liveSamplesCount={monitorStatus?.samples_collected ?? 0}
+        liveSamplesCount={sessionStatus?.total_samples ?? 0}
         isAutoRefresh={isAutoRefresh}
         setIsAutoRefresh={setIsAutoRefresh}
         lastSyncTime={lastSyncTime}
       />
 
-      {/* 3. Real-Time CPU Utilization Stream (Auto-updating with Show/Hide Toggle) */}
-      {forecastData && (
+      {/* When in Live Machine mode and NO telemetry has arrived: Do NOT show fake graphs! Show standby panel */}
+      {isLiveMode && (!forecastData || forecastData.sample_count === 0) && (
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-6 sm:p-8 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800/80 pb-5">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
+                </span>
+                <h3 className="text-base font-bold text-white tracking-wide">
+                  Live Machine Standby • Telemetry Awaiting Stream
+                </h3>
+              </div>
+              <p className="text-xs text-neutral-400">
+                No machine is currently streaming live telemetry. Graphs will appear automatically with real-time CPU measurements once you connect.
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 shrink-0">
+              <span className="text-xs px-3 py-1 rounded-full bg-amber-950/60 text-amber-300 border border-amber-800 font-mono font-semibold">
+                Disconnected
+              </span>
+            </div>
+          </div>
+
+          {/* PowerShell One-Liner Box */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-neutral-300 font-semibold flex items-center space-x-2">
+                <Terminal className="w-4 h-4 text-cyan-400" />
+                <span>Run this command in Windows PowerShell (Zero Python Needed):</span>
+              </span>
+              <span className="text-[11px] text-neutral-500 hidden sm:inline">
+                Runs instantly on Windows 10 & 11
+              </span>
+            </div>
+
+            <div className="bg-black border border-neutral-800 hover:border-neutral-700 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono text-xs transition">
+              <code className="text-cyan-300 select-all break-all sm:break-normal">
+                {pwshCommand}
+              </code>
+              <button
+                type="button"
+                onClick={handleCopyCmd}
+                className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5 shrink-0 self-start sm:self-auto"
+              >
+                {copiedCmd ? (
+                  <>
+                    <Check className="w-4 h-4 text-black" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-black" />
+                    <span>Copy Command</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Steps & Alternative Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <div className="bg-neutral-950 border border-neutral-900 rounded-xl p-3.5 space-y-1">
+              <div className="text-xs font-bold text-white flex items-center space-x-1.5">
+                <span className="w-4 h-4 rounded-full bg-neutral-800 text-neutral-300 flex items-center justify-center text-[10px] font-mono">1</span>
+                <span>Open PowerShell</span>
+              </div>
+              <p className="text-[11px] text-neutral-400 leading-snug">
+                Press <kbd className="px-1 py-0.5 rounded bg-neutral-800 text-neutral-200 text-[10px]">Win + X</kbd> and select Windows Terminal or PowerShell.
+              </p>
+            </div>
+
+            <div className="bg-neutral-950 border border-neutral-900 rounded-xl p-3.5 space-y-1">
+              <div className="text-xs font-bold text-white flex items-center space-x-1.5">
+                <span className="w-4 h-4 rounded-full bg-neutral-800 text-neutral-300 flex items-center justify-center text-[10px] font-mono">2</span>
+                <span>Paste & Press Enter</span>
+              </div>
+              <p className="text-[11px] text-neutral-400 leading-snug">
+                PowerShell will stream your CPU usage every 5 seconds to your private session.
+              </p>
+            </div>
+
+            <div className="bg-neutral-950 border border-neutral-900 rounded-xl p-3.5 space-y-1">
+              <div className="text-xs font-bold text-white flex items-center space-x-1.5">
+                <span className="w-4 h-4 rounded-full bg-neutral-800 text-neutral-300 flex items-center justify-center text-[10px] font-mono">3</span>
+                <span>Auto-Activation</span>
+              </div>
+              <p className="text-[11px] text-neutral-400 leading-snug">
+                This dashboard updates live every 4 seconds. Graphs and forecasts will appear automatically!
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-neutral-900 text-xs">
+            <span className="text-neutral-500">
+              Want to test forecasting right now without opening PowerShell?
+            </span>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setSource('SIMULATION')}
+                className="px-3.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-semibold border border-neutral-700 transition flex items-center space-x-1.5"
+              >
+                <Play className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Switch to Demo Traffic</span>
+              </button>
+              {onOpenConnectModal && (
+                <button
+                  type="button"
+                  onClick={onOpenConnectModal}
+                  className="px-3.5 py-1.5 rounded-xl bg-neutral-950 hover:bg-neutral-900 text-neutral-300 hover:text-white border border-neutral-800 transition"
+                >
+                  Upload CSV Dataset / More
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Real-Time CPU Utilization Stream (Shown only when real data exists) */}
+      {forecastData && forecastData.sample_count > 0 && (
         <LiveUtilizationChart
           data={forecastData.historical_series}
           currentCpu={currentCpu}
@@ -208,8 +360,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         />
       )}
 
-      {/* 4. Proactive Prediction & Workload Forecast Chart */}
-      {forecastData && (
+      {/* 4. Proactive Prediction & Workload Forecast Chart (Shown only when real data exists) */}
+      {forecastData && forecastData.sample_count > 0 && (
         <UnifiedForecastChart
           historicalData={forecastData.historical_series}
           forecastData={forecastData.forecast_series}

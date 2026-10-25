@@ -62,8 +62,14 @@ export const LiveUtilizationChart: React.FC<LiveUtilizationChartProps> = ({
   onToggleVisibility,
   samplesCount = 0
 }) => {
-  // Focus on the most recent 45 actual observations for high-frequency live stream
-  const actualPoints = data.filter((p) => !p.is_forecast && p.actual !== null);
+  // Focus on the most recent 45 actual observations with 100% timestamp deduplication
+  const pointsMap = new Map<string, ForecastPoint>();
+  data.forEach((p) => {
+    if (!p.is_forecast && p.actual !== null) {
+      pointsMap.set(p.timestamp, p);
+    }
+  });
+  const actualPoints = Array.from(pointsMap.values());
   const recentStream = actualPoints.slice(-45);
 
   const values = recentStream.map((p) => p.actual as number);
@@ -74,10 +80,9 @@ export const LiveUtilizationChart: React.FC<LiveUtilizationChartProps> = ({
   const formatXAxis = (tickItem: string) => {
     if (!tickItem) return '';
     const parts = tickItem.split(' ');
-    if (parts.length > 1) {
-      return parts[1].length >= 8 ? parts[1].substring(0, 8) : parts[1].substring(0, 5);
-    }
-    return tickItem.substring(0, 5);
+    const timeStr = parts.length > 1 ? parts[1] : tickItem;
+    // Show exact seconds (HH:mm:ss)
+    return timeStr.length >= 8 ? timeStr.substring(0, 8) : timeStr.substring(0, 5);
   };
 
   // If user has collapsed/hidden the real-time graph, show a crisp 1-line interactive strip

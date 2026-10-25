@@ -283,7 +283,7 @@ export async function postForecast(params: {
   resolution?: 'auto' | 'fine' | 'standard';
   high_threshold?: number;
   low_threshold?: number;
-}): Promise<ForecastResponse> {
+}): Promise<ForecastResponse | null> {
   try {
     const res = await fetch(`${getApiBaseUrl()}/forecast`, {
       method: 'POST',
@@ -301,10 +301,18 @@ export async function postForecast(params: {
     if (res.ok) {
       return await res.json();
     }
+    // When in LIVE mode and machine is disconnected or has 0 samples, NEVER generate fake mock data!
+    if (params.source === 'LIVE') {
+      return null;
+    }
   } catch {
-    // If backend is booting or unreachable, seamlessly return client-side generated telemetry
+    // When backend is unreachable in LIVE mode, return null to show disconnected standby state
+    if (params.source === 'LIVE') {
+      return null;
+    }
   }
 
+  // Only fall back to client mock for simulation if backend is down
   return generateClientMockForecast(params);
 }
 

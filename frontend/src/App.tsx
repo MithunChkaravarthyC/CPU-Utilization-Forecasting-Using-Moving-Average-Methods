@@ -278,9 +278,15 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         mode={source}
-        isLiveRunning={monitorStatus?.is_running ?? false}
+        isLiveRunning={source === 'LIVE' ? Boolean(sessionStatus?.is_connected) : (monitorStatus?.is_running ?? false)}
         aiStatus={aiStatus}
-        currentCpu={forecastData?.current_cpu ?? monitorStatus?.current_cpu ?? null}
+        currentCpu={
+          source === 'LIVE'
+            ? ((sessionStatus?.total_samples ?? 0) > 0 || (forecastData?.sample_count ?? 0) > 0
+                ? (forecastData?.current_cpu ?? sessionStatus?.current_cpu ?? null)
+                : null)
+            : (forecastData?.current_cpu ?? null)
+        }
         user={user}
         onOpenConnectModal={() => setIsConnectModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}

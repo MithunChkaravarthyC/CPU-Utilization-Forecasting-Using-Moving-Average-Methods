@@ -35,6 +35,17 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_source_timestamp ON cpu_measurements (source, timestamp)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_session_source ON cpu_measurements (session_id, source, timestamp)")
 
+        # Eliminate any duplicate timestamp rows and enforce unique index per session+source+timestamp
+        cursor.execute("""
+            DELETE FROM cpu_measurements 
+            WHERE id NOT IN (
+                SELECT MIN(id) 
+                FROM cpu_measurements 
+                GROUP BY session_id, source, timestamp
+            )
+        """)
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_session_source_ts ON cpu_measurements (session_id, source, timestamp)")
+
         # Users table for isolated user telemetry & authentication
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -139,6 +150,9 @@ def insert_measurement(
             """
             INSERT INTO cpu_measurements (timestamp, cpu_utilization, source, session_id, device_name)
             VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(session_id, source, timestamp) DO UPDATE SET
+                cpu_utilization = excluded.cpu_utilization,
+                device_name = excluded.device_name
             """,
             (timestamp, cpu_clean, source, session_id, device_name)
         )
@@ -165,6 +179,9 @@ def insert_measurements_batch(records: List[Dict[str, Any]]):
             """
             INSERT INTO cpu_measurements (timestamp, cpu_utilization, source, session_id, device_name)
             VALUES (:timestamp, :cpu_utilization, :source, :session_id, :device_name)
+            ON CONFLICT(session_id, source, timestamp) DO UPDATE SET
+                cpu_utilization = excluded.cpu_utilization,
+                device_name = excluded.device_name
             """,
             cleaned_records
         )
@@ -191,7 +208,7 @@ def get_measurements(
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         
-        query += f" ORDER BY timestamp {order}"
+        query += f" ORDER BY timestamp {order}, id {order}"
         if limit:
             query += f" LIMIT {int(limit)}"
         

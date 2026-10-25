@@ -152,13 +152,21 @@ async def monitor_current(session_id: Optional[str] = Query(None)):
             return {
                 "current_cpu": round(float(latest["cpu_utilization"]), 1),
                 "timestamp": latest["timestamp"],
-                "device_name": latest.get("device_name", "Remote Agent")
+                "device_name": latest.get("device_name", "Remote Agent"),
+                "is_connected": True
             }
+        return {
+            "current_cpu": None,
+            "timestamp": None,
+            "device_name": None,
+            "is_connected": False
+        }
     cpu = psutil.cpu_percent(interval=0.1)
     return {
         "current_cpu": round(cpu, 1),
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "device_name": "Host Machine"
+        "device_name": "Host Machine",
+        "is_connected": True
     }
 
 # -------------------------------------------------------------
@@ -521,13 +529,15 @@ async def create_forecast(req: ForecastRequest):
         limit=288,
         order="DESC"
     )
-    if not raw_measurements or len(raw_measurements) < req.window:
-        err_msg = f"Insufficient historical data for this forecast configuration. Required window: {req.window} observations, available: {len(raw_measurements)}."
+    if not raw_measurements or len(raw_measurements) == 0:
         if req.source == "LIVE":
-            err_msg += f" (Session: '{req.session_id or 'default'}'). Please keep your telemetry agent running or upload a CPU CSV dataset."
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="NO_LIVE_DATA"
+            )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=err_msg
+            detail="No simulation measurements found. Please generate simulation data."
         )
 
     raw_measurements.reverse()
@@ -536,20 +546,24 @@ async def create_forecast(req: ForecastRequest):
     
     current_cpu = cpu_values[-1]
     
-    # 1. Historical Smoothing & Backtesting
-    sma_hist = calculate_sma(cpu_values, req.window)
-    wma_hist = calculate_wma(cpu_values, req.window)
-    ema_hist = calculate_ema(cpu_values, req.window)
+    # Adaptive window: use min(req.window, len(raw_measurements)) so initial streaming samples
+    # (even 1, 2, or 3 points) immediately produce accurate moving averages without error
+    effective_window = max(1, min(req.window, len(raw_measurements)))
     
-    metrics_list, best_method, best_reason = run_historical_backtest(cpu_values, req.window)
+    # 1. Historical Smoothing & Backtesting
+    sma_hist = calculate_sma(cpu_values, effective_window)
+    wma_hist = calculate_wma(cpu_values, effective_window)
+    ema_hist = calculate_ema(cpu_values, effective_window)
+    
+    metrics_list, best_method, best_reason = run_historical_backtest(cpu_values, effective_window)
     
     # 2. Multi-step Recursive Forecasting
     steps, interval_mins, res_label = get_horizon_resolution_steps(req.horizon, req.resolution)
     last_dt = datetime.strptime(timestamps[-1], "%Y-%m-%d %H:%M:%S")
     
-    sma_future = forecast_recursive_sma(cpu_values, req.window, steps, start_time=last_dt, interval_mins=interval_mins)
-    wma_future = forecast_recursive_wma(cpu_values, req.window, steps, start_time=last_dt, interval_mins=interval_mins)
-    ema_future = forecast_recursive_ema(cpu_values, req.window, steps, start_time=last_dt, interval_mins=interval_mins)
+    sma_future = forecast_recursive_sma(cpu_values, effective_window, steps, start_time=last_dt, interval_mins=interval_mins)
+    wma_future = forecast_recursive_wma(cpu_values, effective_window, steps, start_time=last_dt, interval_mins=interval_mins)
+    ema_future = forecast_recursive_ema(cpu_values, effective_window, steps, start_time=last_dt, interval_mins=interval_mins)
     
     # Final horizon forecast values
     sma_final = sma_future[-1]
@@ -571,7 +585,7 @@ async def create_forecast(req: ForecastRequest):
     )
     
     # 4. Trend Analysis
-    trend = analyze_trend(cpu_values, recent_window=max(req.window * 2, 10))
+    trend = analyze_trend(cpu_values, recent_window=max(effective_window * 2, 10))
     
     # 5. Format series for frontend charts
     # For historical series, return recent points (up to last 120 points for smooth rendering)
@@ -589,20 +603,8 @@ async def create_forecast(req: ForecastRequest):
             is_forecast=False
         ))
         
-    # Generate future timestamps
-    last_dt = datetime.strptime(timestamps[-1], "%Y-%m-%d %H:%M:%S")
+    # Generate future timestamps without duplicate connecting anchor
     forecast_series: List[ForecastPoint] = []
-    
-    # Add connecting anchor point at last known timestamp
-    forecast_series.append(ForecastPoint(
-        timestamp=timestamps[-1],
-        actual=current_cpu,
-        sma=sma_hist[-1] or current_cpu,
-        wma=wma_hist[-1] or current_cpu,
-        ema=ema_hist[-1] or current_cpu,
-        is_forecast=False
-    ))
-    
     for step_idx in range(steps):
         future_dt = last_dt + timedelta(minutes=(step_idx + 1) * interval_mins)
         ts_str = future_dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -621,7 +623,7 @@ async def create_forecast(req: ForecastRequest):
         current_cpu=current_cpu,
         horizon=req.horizon,
         resolution=res_label,
-        window=req.window,
+        window=effective_window,
         sma_forecast=sma_final,
         wma_forecast=wma_final,
         ema_forecast=ema_final,

@@ -20,6 +20,9 @@ export const TopCards: React.FC<TopCardsProps> = ({
 }) => {
   // User-friendly model label
   const getFriendlyModelName = (method: string | null) => {
+    if (currentCpu === null || !method) {
+      return { name: 'Adaptive Engine', badge: 'Standby', desc: 'Will evaluate best model (SMA/WMA/EMA) once streaming starts' };
+    }
     switch (method) {
       case 'EMA':
         return { name: 'Fast-Adaptive', badge: 'High Reaction', desc: 'Adapts quickly to sudden traffic spikes' };
@@ -36,6 +39,15 @@ export const TopCards: React.FC<TopCardsProps> = ({
 
   // User-friendly scaling label
   const getActionDetails = (decision?: string) => {
+    if (currentCpu === null) {
+      return {
+        label: 'Awaiting Telemetry',
+        badgeClass: 'bg-neutral-900 text-neutral-400 border-neutral-700 font-medium',
+        dotClass: 'bg-neutral-500',
+        icon: Server,
+        desc: 'Connect machine via PowerShell to stream metrics and get capacity advice.'
+      };
+    }
     switch (decision) {
       case 'SCALE UP':
         return {
@@ -89,20 +101,36 @@ export const TopCards: React.FC<TopCardsProps> = ({
           <span className="text-3xl font-extrabold tracking-tight text-white font-mono">
             {currentCpu !== null ? `${currentCpu.toFixed(1)}%` : '--'}
           </span>
-          <span className="text-xs text-neutral-400">active now</span>
+          <span className="text-xs text-neutral-400">
+            {currentCpu !== null ? 'active now' : 'awaiting stream'}
+          </span>
         </div>
         <div className="mt-3.5 w-full bg-neutral-800 rounded-full h-2 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              (currentCpu || 0) >= 75 ? 'bg-rose-500' : (currentCpu || 0) <= 20 ? 'bg-amber-500' : 'bg-emerald-500'
+              currentCpu === null
+                ? 'bg-neutral-700'
+                : currentCpu >= 75
+                ? 'bg-rose-500'
+                : currentCpu <= 20
+                ? 'bg-amber-500'
+                : 'bg-emerald-500'
             }`}
-            style={{ width: `${Math.min(100, Math.max(0, currentCpu || 0))}%` }}
+            style={{ width: `${currentCpu !== null ? Math.min(100, Math.max(0, currentCpu)) : 0}%` }}
           />
         </div>
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-neutral-400">
           <span>Target zone: 20% – 75%</span>
-          <span className={`font-semibold ${(currentCpu || 0) >= 75 ? 'text-rose-400' : 'text-emerald-400'}`}>
-            {(currentCpu || 0) >= 75 ? 'High Load' : 'Healthy'}
+          <span className={`font-semibold ${
+            currentCpu === null
+              ? 'text-neutral-500'
+              : currentCpu >= 75
+              ? 'text-rose-400'
+              : currentCpu <= 20
+              ? 'text-amber-400'
+              : 'text-emerald-400'
+          }`}>
+            {currentCpu === null ? 'Standby' : currentCpu >= 75 ? 'High Load' : currentCpu <= 20 ? 'Low Load' : 'Healthy'}
           </span>
         </div>
       </div>
@@ -120,17 +148,17 @@ export const TopCards: React.FC<TopCardsProps> = ({
             {forecastCpu !== null ? `${forecastCpu.toFixed(1)}%` : '--'}
           </span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-amber-950/70 text-amber-300 border border-amber-800 font-medium">
-            in {horizon}
+            {forecastCpu !== null ? `in ${horizon}` : 'Standby'}
           </span>
         </div>
         <div className="mt-3 text-xs text-neutral-300 flex items-center justify-between">
           <span className="text-neutral-400">Peak Prediction</span>
           <span className="font-mono text-cyan-300 font-medium">
-            {forecastCpu && currentCpu ? `${forecastCpu > currentCpu ? '+' : ''}${(forecastCpu - currentCpu).toFixed(1)}% shift` : 'Continuous'}
+            {forecastCpu !== null && currentCpu !== null ? `${forecastCpu > currentCpu ? '+' : ''}${(forecastCpu - currentCpu).toFixed(1)}% shift` : 'Awaiting Data'}
           </span>
         </div>
         <p className="mt-1 text-[11px] text-neutral-400 truncate">
-          Calculated ahead for proactive scaling
+          {forecastCpu !== null ? 'Calculated ahead for proactive scaling' : 'Run PowerShell agent to begin forecasts'}
         </p>
       </div>
 
