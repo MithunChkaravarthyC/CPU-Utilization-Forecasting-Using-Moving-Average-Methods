@@ -29,7 +29,7 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
       const diff = val - high;
       return {
         decision: 'Scale Up (+1 Server)',
-        badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-600',
+        badgeClass: 'bg-white text-black font-extrabold border-white shadow-sm',
         icon: ArrowUpRight,
         reason: `Workload exceeds your ${high}% safe ceiling by +${diff.toFixed(1)}%. An extra server instance is added automatically.`
       };
@@ -37,14 +37,14 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
       const diffLow = low - val;
       return {
         decision: 'Scale Down (-1 Server)',
-        badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-600',
+        badgeClass: 'bg-neutral-900 text-white font-bold border-neutral-700',
         icon: ArrowDownRight,
         reason: `Workload is ${diffLow.toFixed(1)}% below your ${low}% floor. An idle server is powered down to save cloud costs.`
       };
     } else {
       return {
         decision: 'Optimal Capacity',
-        badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-600',
+        badgeClass: 'bg-neutral-900 text-neutral-200 border-neutral-700',
         icon: CheckCircle2,
         reason: `Workload is inside the safe target zone (${low}% – ${high}%). No server changes needed.`
       };
@@ -63,12 +63,12 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-slate-800 pb-4">
+      <div className="border-b border-neutral-800 pb-4">
         <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-          <Server className="w-5 h-5 text-cyan-400" />
+          <Server className="w-5 h-5 text-white" />
           <span>Auto-Scaling Rules & Capacity Simulator</span>
         </h2>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-neutral-400 mt-1">
           Configure proactive rules that automatically scale servers before traffic peaks slow down your application.
         </p>
       </div>
@@ -76,18 +76,18 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
       {/* Threshold Configuration Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* High Threshold Card */}
-        <div className="bg-[#0e1424]/90 backdrop-blur border border-slate-800/80 rounded-2xl p-6 space-y-4">
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <span className="p-1.5 rounded-lg bg-rose-950/60 text-rose-400 border border-rose-800/50">
+              <span className="p-1.5 rounded-lg bg-neutral-900 text-white border border-neutral-800">
                 <ArrowUpRight className="w-4 h-4" />
               </span>
               <div>
                 <h3 className="text-sm font-bold text-white">Scale-Up Ceiling</h3>
-                <p className="text-xs text-slate-400">Trigger extra servers when forecast hits this ceiling</p>
+                <p className="text-xs text-neutral-400">Trigger extra servers when forecast hits this ceiling</p>
               </div>
             </div>
-            <span className="text-2xl font-mono font-extrabold text-rose-400">
+            <span className="text-2xl font-mono font-extrabold text-white">
               {highThreshold}%
             </span>
           </div>
@@ -99,10 +99,10 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
             step={1}
             value={highThreshold}
             onChange={(e) => setHighThreshold(Number(e.target.value))}
-            className="w-full accent-rose-500 cursor-pointer"
+            className="w-full accent-white cursor-pointer"
           />
 
-          <div className="flex items-center justify-between text-[11px] text-slate-400">
+          <div className="flex items-center justify-between text-[11px] text-neutral-400">
             <span>Aggressive (50%)</span>
             <span>Recommended (75%)</span>
             <span>Conservative (95%)</span>
@@ -110,18 +110,18 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
         </div>
 
         {/* Low Threshold Card */}
-        <div className="bg-[#0e1424]/90 backdrop-blur border border-slate-800/80 rounded-2xl p-6 space-y-4">
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <span className="p-1.5 rounded-lg bg-amber-950/60 text-amber-400 border border-amber-800/50">
+              <span className="p-1.5 rounded-lg bg-neutral-900 text-neutral-300 border border-neutral-800">
                 <ArrowDownRight className="w-4 h-4" />
               </span>
               <div>
                 <h3 className="text-sm font-bold text-white">Scale-Down Floor</h3>
-                <p className="text-xs text-slate-400">Power down idle servers when forecast drops below this floor</p>
+                <p className="text-xs text-neutral-400">Power down idle servers when forecast drops below this floor</p>
               </div>
             </div>
-            <span className="text-2xl font-mono font-extrabold text-amber-400">
+            <span className="text-2xl font-mono font-extrabold text-neutral-300">
               {lowThreshold}%
             </span>
           </div>
@@ -133,10 +133,10 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
             step={1}
             value={lowThreshold}
             onChange={(e) => setLowThreshold(Number(e.target.value))}
-            className="w-full accent-amber-500 cursor-pointer"
+            className="w-full accent-neutral-400 cursor-pointer"
           />
 
-          <div className="flex items-center justify-between text-[11px] text-slate-400">
+          <div className="flex items-center justify-between text-[11px] text-neutral-400">
             <span>Cost Saver (5%)</span>
             <span>Recommended (20%)</span>
             <span>Early Downscale (40%)</span>
@@ -146,7 +146,7 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
 
       {/* Quick Presets */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs font-semibold text-slate-400">Quick Rule Presets:</span>
+        <span className="text-xs font-semibold text-neutral-400">Quick Rule Presets:</span>
         {presets.map((p) => (
           <button
             key={p.label}
@@ -157,8 +157,8 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
             }}
             className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition ${
               highThreshold === p.high && lowThreshold === p.low
-                ? 'bg-cyan-950/80 border-cyan-600 text-cyan-300 font-bold'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                ? 'bg-white border-white text-black font-bold shadow-sm'
+                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'
             }`}
           >
             {p.label} ({p.high}% / {p.low}%)
@@ -167,22 +167,22 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
       </div>
 
       {/* Interactive Simulator */}
-      <div className="bg-[#0e1424]/90 backdrop-blur border border-slate-800/80 rounded-2xl p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-2">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-neutral-800 gap-2">
           <div className="flex items-center space-x-2">
-            <SlidersHorizontal className="w-5 h-5 text-cyan-400" />
+            <SlidersHorizontal className="w-5 h-5 text-white" />
             <div>
               <h3 className="text-base font-bold text-white tracking-wide">
                 Interactive Rule Simulator
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-neutral-400 mt-0.5">
                 Drag the simulated workload slider to test how auto-scaling rules respond in real-time.
               </p>
             </div>
           </div>
 
-          <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-900 text-slate-300 border border-slate-700">
-            Simulated CPU: <strong className="text-cyan-300">{testForecast.toFixed(1)}%</strong>
+          <span className="text-xs font-mono px-3 py-1 rounded-full bg-neutral-900 text-white border border-neutral-700">
+            Simulated CPU: <strong className="text-white">{testForecast.toFixed(1)}%</strong>
           </span>
         </div>
 
@@ -195,9 +195,9 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
             step={0.5}
             value={testForecast}
             onChange={(e) => setTestForecast(Number(e.target.value))}
-            className="w-full accent-cyan-400 cursor-pointer h-2"
+            className="w-full accent-white cursor-pointer h-2"
           />
-          <div className="flex justify-between text-[11px] text-slate-500 font-mono">
+          <div className="flex justify-between text-[11px] text-neutral-500 font-mono">
             <span>0% Idle</span>
             <span>25% Light</span>
             <span>50% Medium</span>
@@ -207,22 +207,22 @@ export const ScalingPage: React.FC<ScalingPageProps> = ({
         </div>
 
         {/* Simulated Output Card */}
-        <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <div className={`p-2 rounded-xl border ${simResult.badgeClass}`}>
               <SimIcon className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs text-slate-400 block font-medium">Triggered Response</span>
+              <span className="text-xs text-neutral-400 block font-medium">Triggered Response</span>
               <span className="text-base font-bold text-white font-sans">{simResult.decision}</span>
-              <p className="text-xs text-slate-300 mt-0.5">{simResult.reason}</p>
+              <p className="text-xs text-neutral-300 mt-0.5">{simResult.reason}</p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={() => setTestForecast(forecastCpu || 50)}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium whitespace-nowrap transition self-start sm:self-auto"
+            className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-medium whitespace-nowrap transition self-start sm:self-auto"
           >
             Reset to Real Forecast
           </button>

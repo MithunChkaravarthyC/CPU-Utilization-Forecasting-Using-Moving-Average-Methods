@@ -248,7 +248,7 @@ export const App: React.FC = () => {
   }, [monitorStatus?.is_running]);
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] text-gray-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-white selection:text-black">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -262,22 +262,22 @@ export const App: React.FC = () => {
       {/* Global Error Banner */}
       {errorMessage && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-          <div className="bg-rose-950/80 border border-rose-700/80 p-3 rounded-lg flex items-center justify-between text-xs text-rose-200">
+          <div className="bg-neutral-900 border border-neutral-700 p-3.5 rounded-xl flex items-center justify-between text-xs text-neutral-200 shadow-lg">
             <div className="flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-white shrink-0" />
               <span>{errorMessage}</span>
               {errorMessage.includes('Insufficient') && (
                 <button
                   onClick={() => setIsConnectModalOpen(true)}
-                  className="ml-2 px-2 py-0.5 rounded bg-sky-900/60 hover:bg-sky-800 text-sky-200 border border-sky-600/50 font-medium text-[11px] transition"
+                  className="ml-2 px-2.5 py-1 rounded bg-white hover:bg-neutral-200 text-black font-semibold text-[11px] transition shadow-sm"
                 >
-                  📡 Connect Machine / Upload Data
+                  Connect Machine / Upload Data
                 </button>
               )}
             </div>
             <button
               onClick={() => setErrorMessage(null)}
-              className="text-rose-400 hover:text-white p-1"
+              className="text-neutral-400 hover:text-white p-1"
             >
               <X className="w-4 h-4" />
             </button>
@@ -394,12 +394,12 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-[#070b14] py-4 text-center text-xs text-slate-500">
+      <footer className="border-t border-neutral-800 bg-black py-5 text-center text-xs text-neutral-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
-            <strong className="text-slate-300">CPU Pulse</strong> — Intelligent Cloud Capacity & Workload Forecasting
+            <strong className="text-white">CPU Pulse</strong> — Intelligent Cloud Capacity & Workload Forecasting
           </span>
-          <span className="font-mono text-slate-500">
+          <span className="font-mono text-neutral-400">
             Real-Time Telemetry • 24h Projections • Proactive Capacity Rules
           </span>
         </div>

@@ -200,24 +200,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* 6. Expandable Raw Data Log Section (Kept secondary to avoid clutter) */}
       {forecastData && (
-        <div className="border border-slate-800/80 rounded-2xl overflow-hidden bg-[#0e1424]/60">
+        <div className="border border-neutral-800 rounded-2xl overflow-hidden bg-[#0a0a0a]">
           <button
             type="button"
             onClick={() => setShowLogTable(!showLogTable)}
-            className="w-full px-6 py-3.5 flex items-center justify-between text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-900/60 transition"
+            className="w-full px-6 py-3.5 flex items-center justify-between text-xs font-semibold text-neutral-300 hover:text-white hover:bg-neutral-900/60 transition"
           >
             <div className="flex items-center space-x-2">
-              <Table className="w-4 h-4 text-cyan-400" />
+              <Table className="w-4 h-4 text-white" />
               <span>Inspection Logs & Recorded Metrics ({forecastData.sample_count} observations)</span>
             </div>
-            <div className="flex items-center space-x-1.5 text-slate-400">
+            <div className="flex items-center space-x-1.5 text-neutral-400">
               <span>{showLogTable ? 'Hide Table' : 'Expand Table'}</span>
               {showLogTable ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
           </button>
 
           {showLogTable && (
-            <div className="p-4 border-t border-slate-800">
+            <div className="p-4 border-t border-neutral-800">
               <DataTable
                 historicalData={forecastData.historical_series}
                 forecastData={forecastData.forecast_series}

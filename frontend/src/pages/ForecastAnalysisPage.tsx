@@ -17,7 +17,7 @@ export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
 }) => {
   if (!forecastData) {
     return (
-      <div className="p-12 text-center text-slate-400 bg-[#0e1424]/80 border border-slate-800 rounded-2xl">
+      <div className="p-12 text-center text-neutral-400 bg-[#0a0a0a] border border-neutral-800 rounded-2xl">
         No active forecast data available. Please return to Overview and click "Update Forecast".
       </div>
     );
@@ -29,8 +29,8 @@ export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
       return {
         label: 'Traffic Rising',
         desc: 'Usage is climbing. System preparing for higher load.',
-        color: 'text-amber-400',
-        bg: 'bg-amber-950/40 border-amber-800/50',
+        color: 'text-white',
+        bg: 'bg-neutral-900 border-neutral-700',
         icon: TrendingUp
       };
     }
@@ -38,16 +38,16 @@ export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
       return {
         label: 'Traffic Easing',
         desc: 'Usage is declining toward low-load territory.',
-        color: 'text-teal-400',
-        bg: 'bg-teal-950/40 border-teal-800/50',
+        color: 'text-neutral-300',
+        bg: 'bg-neutral-900 border-neutral-700',
         icon: TrendingDown
       };
     }
     return {
       label: 'Stable Workload',
       desc: 'Traffic is balanced with no sharp surges.',
-      color: 'text-cyan-400',
-      bg: 'bg-cyan-950/40 border-cyan-800/50',
+      color: 'text-neutral-200',
+      bg: 'bg-neutral-900 border-neutral-700',
       icon: Minus
     };
   };
@@ -67,18 +67,18 @@ export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="border-b border-neutral-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-            <Cpu className="w-5 h-5 text-cyan-400" />
+            <Cpu className="w-5 h-5 text-white" />
             <span>Workload Predictor Lab</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-neutral-400 mt-1">
             Proactive workload projections ahead of time so you can right-size servers before bottlenecks occur.
           </p>
         </div>
 
-        <span className="text-xs px-3 py-1 rounded-full bg-slate-900 text-slate-300 border border-slate-700 font-mono">
+        <span className="text-xs px-3 py-1 rounded-full bg-neutral-900 text-white border border-neutral-700 font-mono font-medium">
           Horizon: {forecastData.horizon} ({forecastData.resolution})
         </span>
       </div>
@@ -86,8 +86,8 @@ export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
       {/* 4 Summary Stat Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Workload Direction */}
-        <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-4">
-          <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1 font-semibold">
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-4">
+          <span className="text-xs text-neutral-400 uppercase tracking-wider block mb-1 font-semibold">
             Traffic Trend
           </span>
           <div className="flex items-center space-x-2">
@@ -96,30 +96,30 @@ export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
               {trendInfo.label}
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1.5 block">
+          <span className="text-[11px] text-neutral-400 mt-1.5 block">
             {trendInfo.desc}
           </span>
         </div>
 
         {/* Expected Peak Load */}
-        <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-4">
-          <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1 font-semibold">
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-4">
+          <span className="text-xs text-neutral-400 uppercase tracking-wider block mb-1 font-semibold">
             Predicted Workload
           </span>
           <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-mono font-extrabold text-cyan-300">
+            <span className="text-2xl font-mono font-extrabold text-white">
               {bestVal.toFixed(1)}%
             </span>
-            <span className="text-xs text-slate-400">in {forecastData.horizon}</span>
+            <span className="text-xs text-neutral-400">in {forecastData.horizon}</span>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1.5 block">
+          <span className="text-[11px] text-neutral-400 mt-1.5 block">
             {diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`} shift from current
           </span>
         </div>
 
         {/* Safe Capacity Target */}
-        <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-4">
-          <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1 font-semibold">
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-4">
+          <span className="text-xs text-neutral-400 uppercase tracking-wider block mb-1 font-semibold">
             Capacity Safety Zone
           </span>
           <div className="flex items-baseline space-x-2">
@@ -127,7 +127,7 @@ export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
               20% – {highThreshold}%
             </span>
           </div>
-          <span className="text-[11px] text-emerald-400 mt-1.5 block font-medium">
+          <span className="text-[11px] text-neutral-300 mt-1.5 block font-medium">
             {bestVal <= highThreshold && bestVal >= lowThreshold
               ? 'Within safe boundaries'
               : bestVal > highThreshold
@@ -137,8 +137,8 @@ export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
         </div>
 
         {/* Recommended Proactive Action */}
-        <div className="bg-[#0e1424]/80 backdrop-blur border border-slate-800/80 rounded-2xl p-4">
-          <span className="text-xs text-slate-400 uppercase tracking-wider block mb-1 font-semibold">
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-4">
+          <span className="text-xs text-neutral-400 uppercase tracking-wider block mb-1 font-semibold">
             Recommended Action
           </span>
           <div className="flex items-center space-x-2">
@@ -150,7 +150,7 @@ export const ForecastAnalysisPage: React.FC<ForecastAnalysisPageProps> = ({
                 : 'Reduce -1 Server'}
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1.5 block truncate">
+          <span className="text-[11px] text-neutral-400 mt-1.5 block truncate">
             {forecastData.scaling_decision.reason}
           </span>
         </div>

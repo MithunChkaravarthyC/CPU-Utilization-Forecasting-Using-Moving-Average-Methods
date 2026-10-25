@@ -64,13 +64,13 @@ export const AccuracyPage: React.FC<AccuracyPageProps> = ({ metrics, bestMethod,
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-neutral-800 gap-2">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-            <Activity className="w-5 h-5 text-cyan-400" />
+            <Activity className="w-5 h-5 text-white" />
             <span>Model Performance & Reliability</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-neutral-400 mt-1">
             Verification of prediction accuracy and smoothing lookback settings against your workload.
           </p>
         </div>
@@ -78,7 +78,7 @@ export const AccuracyPage: React.FC<AccuracyPageProps> = ({ metrics, bestMethod,
         <button
           onClick={loadWindowComparison}
           disabled={isLoading}
-          className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-700 transition"
+          className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold border border-neutral-700 transition"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           <span>Refresh Reliability</span>
@@ -97,8 +97,8 @@ export const AccuracyPage: React.FC<AccuracyPageProps> = ({ metrics, bestMethod,
               key={m.method}
               className={`p-5 rounded-2xl border transition ${
                 isBest
-                  ? 'bg-cyan-950/20 border-cyan-500/50 shadow-md'
-                  : 'bg-[#0e1424]/80 border-slate-800'
+                  ? 'bg-neutral-900 border-neutral-600 shadow-md'
+                  : 'bg-[#0a0a0a] border-neutral-800'
               }`}
             >
               <div className="flex items-center justify-between mb-3">
@@ -106,15 +106,15 @@ export const AccuracyPage: React.FC<AccuracyPageProps> = ({ metrics, bestMethod,
                   <span className="font-extrabold text-white text-base font-sans">
                     {info.name}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">({m.method})</span>
+                  <span className="text-[10px] font-mono text-neutral-400">({m.method})</span>
                 </div>
                 {isBest ? (
-                  <span className="flex items-center space-x-1 text-[10px] font-bold uppercase text-amber-300 px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-600/50">
+                  <span className="flex items-center space-x-1 text-[10px] font-bold uppercase text-black px-2 py-0.5 rounded-full bg-white shadow-sm">
                     <Award className="w-3 h-3" />
                     <span>Top Match</span>
                   </span>
                 ) : (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-400 border border-neutral-800">
                     {info.tag}
                   </span>
                 )}
@@ -125,28 +125,28 @@ export const AccuracyPage: React.FC<AccuracyPageProps> = ({ metrics, bestMethod,
                 <span className="text-3xl font-extrabold text-white font-mono">
                   {accuracyPercent.toFixed(1)}%
                 </span>
-                <span className="text-xs text-slate-400">accuracy score</span>
+                <span className="text-xs text-neutral-400">accuracy score</span>
               </div>
 
-              <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden mb-3">
+              <div className="w-full bg-neutral-800 rounded-full h-1.5 overflow-hidden mb-3">
                 <div
-                  className="h-full rounded-full transition-all duration-500 bg-cyan-400"
+                  className="h-full rounded-full transition-all duration-500 bg-white"
                   style={{ width: `${accuracyPercent}%` }}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-800/80 text-slate-300">
+              <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-neutral-800 text-neutral-300">
                 <div>
-                  <span className="text-slate-500 block text-[10px]">Average Error:</span>
-                  <span className="font-mono font-bold text-slate-200">±{m.mae.toFixed(1)}%</span>
+                  <span className="text-neutral-500 block text-[10px]">Average Error:</span>
+                  <span className="font-mono font-bold text-neutral-200">±{m.mae.toFixed(1)}%</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[10px]">Peak Divergence:</span>
-                  <span className="font-mono font-bold text-slate-200">±{m.rmse.toFixed(1)}%</span>
+                  <span className="text-neutral-500 block text-[10px]">Peak Divergence:</span>
+                  <span className="font-mono font-bold text-neutral-200">±{m.rmse.toFixed(1)}%</span>
                 </div>
               </div>
 
-              <p className="mt-3 text-[11px] text-slate-400">
+              <p className="mt-3 text-[11px] text-neutral-400">
                 {info.desc}
               </p>
             </div>
@@ -155,45 +155,45 @@ export const AccuracyPage: React.FC<AccuracyPageProps> = ({ metrics, bestMethod,
       </div>
 
       {/* Smoothing Lookback Chart */}
-      <div className="bg-[#0e1424]/90 backdrop-blur border border-slate-800/80 rounded-2xl p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-neutral-800">
           <div>
             <h3 className="text-base font-bold text-white tracking-wide">
               Lookback Tuning (Smoothing vs. Responsiveness)
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-neutral-400 mt-0.5">
               Lower error bars indicate a more accurate lookback window for current workload.
             </p>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-full bg-slate-900 text-slate-300 border border-slate-700 font-mono">
+          <span className="text-xs px-2.5 py-1 rounded-full bg-neutral-900 text-white border border-neutral-700 font-mono">
             Source: {source}
           </span>
         </div>
 
         {error ? (
-          <div className="p-4 bg-rose-950/40 text-rose-300 text-xs rounded-xl border border-rose-800">
+          <div className="p-4 bg-neutral-900 text-neutral-300 text-xs rounded-xl border border-neutral-700">
             {error}
           </div>
         ) : (
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={windowData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
                 <XAxis
                   dataKey="window"
-                  stroke="#64748b"
+                  stroke="#737373"
                   fontSize={11}
                   tickFormatter={(w) => `${w}m lookback`}
                 />
-                <YAxis stroke="#64748b" fontSize={11} unit="%" />
+                <YAxis stroke="#737373" fontSize={11} unit="%" />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#090D16', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
+                  contentStyle={{ backgroundColor: '#000000', borderColor: '#404040', borderRadius: '12px', fontSize: '12px', color: '#ffffff' }}
                   formatter={(val: any) => [`±${Number(val).toFixed(1)}% error`, 'Error Margin']}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
                 <Bar dataKey="sma_mae" name="Balanced (SMA)" fill="#38bdf8" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="wma_mae" name="Recent-Weighted (WMA)" fill="#c084fc" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="ema_mae" name="Fast-Adaptive (EMA)" fill="#2dd4bf" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="ema_mae" name="Fast-Adaptive (EMA)" fill="#34d399" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -201,19 +201,19 @@ export const AccuracyPage: React.FC<AccuracyPageProps> = ({ metrics, bestMethod,
       </div>
 
       {/* Clean Lookback Benchmark Table */}
-      <div className="bg-[#0e1424]/90 backdrop-blur border border-slate-800/80 rounded-2xl p-6 space-y-4">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-6 space-y-4">
         <div>
           <h3 className="text-base font-bold text-white tracking-wide">
             Lookback Window Benchmark
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-neutral-400 mt-0.5">
             5-minute smoothing delivers optimal accuracy for web servers, while 3-minute smoothing reacts fastest to sudden surges.
           </p>
         </div>
 
-        <div className="overflow-x-auto border border-slate-800/80 rounded-xl">
+        <div className="overflow-x-auto border border-neutral-800 rounded-xl">
           <table className="w-full text-left text-xs font-sans">
-            <thead className="bg-slate-950/80 text-slate-400 uppercase tracking-wider border-b border-slate-800 text-[11px]">
+            <thead className="bg-neutral-950 text-neutral-400 uppercase tracking-wider border-b border-neutral-800 text-[11px]">
               <tr>
                 <th className="py-3 px-4">Smoothing Window</th>
                 <th className="py-3 px-4">Balanced Error</th>
@@ -222,16 +222,16 @@ export const AccuracyPage: React.FC<AccuracyPageProps> = ({ metrics, bestMethod,
                 <th className="py-3 px-4">Ideal Workload</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-neutral-800 font-mono">
               {windowData.map((row) => (
-                <tr key={row.window} className="hover:bg-slate-900/40 transition">
+                <tr key={row.window} className="hover:bg-neutral-900/40 transition">
                   <td className="py-3 px-4 font-bold text-white font-sans">
                     {getLookbackLabel(row.window)}
                   </td>
-                  <td className="py-3 px-4 text-sky-300">±{row.sma_mae.toFixed(1)}%</td>
-                  <td className="py-3 px-4 text-purple-300">±{row.wma_mae.toFixed(1)}%</td>
-                  <td className="py-3 px-4 text-teal-300 font-bold">±{row.ema_mae.toFixed(1)}%</td>
-                  <td className="py-3 px-4 font-sans text-slate-400">
+                  <td className="py-3 px-4 text-white">±{row.sma_mae.toFixed(1)}%</td>
+                  <td className="py-3 px-4 text-neutral-300">±{row.wma_mae.toFixed(1)}%</td>
+                  <td className="py-3 px-4 text-neutral-400 font-bold">±{row.ema_mae.toFixed(1)}%</td>
+                  <td className="py-3 px-4 font-sans text-neutral-400">
                     {row.window <= 3
                       ? 'Spiky / Real-time APIs'
                       : row.window <= 7

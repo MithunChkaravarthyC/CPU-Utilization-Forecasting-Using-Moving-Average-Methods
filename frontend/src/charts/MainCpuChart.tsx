@@ -21,16 +21,16 @@ interface MainCpuChartProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-gray-950 border border-gray-700/80 p-3 rounded-lg shadow-xl text-xs space-y-1 font-mono">
-        <p className="text-gray-400 font-semibold border-b border-gray-800 pb-1 mb-1">
+      <div className="bg-black border border-neutral-700 p-3 rounded-xl shadow-xl text-xs space-y-1 font-mono">
+        <p className="text-neutral-400 font-semibold border-b border-neutral-800 pb-1 mb-1">
           {label}
         </p>
         {payload.map((entry: any, index: number) => {
           if (entry.value === null || entry.value === undefined) return null;
           return (
             <div key={`item-${index}`} className="flex items-center justify-between space-x-4">
-              <span className="flex items-center space-x-1.5" style={{ color: entry.color }}>
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="flex items-center space-x-1.5 text-neutral-300">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || '#ffffff' }} />
                 <span>{entry.name}:</span>
               </span>
               <span className="font-bold text-white">{Number(entry.value).toFixed(2)}%</span>
@@ -64,11 +64,11 @@ export const MainCpuChart: React.FC<MainCpuChartProps> = ({
   };
 
   return (
-    <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-5 shadow-sm space-y-4">
+    <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-white">Historical CPU Smoothing</h3>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-neutral-400">
             Comparing Actual measurements with SMA, WMA, and EMA curves
           </p>
         </div>
@@ -77,40 +77,40 @@ export const MainCpuChart: React.FC<MainCpuChartProps> = ({
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
           <button
             onClick={() => setShowActual(!showActual)}
-            className={`px-2.5 py-1 rounded border transition ${
+            className={`px-2.5 py-1 rounded-lg border transition ${
               showActual
-                ? 'bg-slate-800 text-slate-100 border-slate-600'
-                : 'bg-transparent text-gray-500 border-gray-800'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-700 font-bold'
+                : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:text-white'
             }`}
           >
             Actual
           </button>
           <button
             onClick={() => setShowSMA(!showSMA)}
-            className={`px-2.5 py-1 rounded border transition ${
+            className={`px-2.5 py-1 rounded-lg border transition ${
               showSMA
-                ? 'bg-sky-950 text-sky-300 border-sky-600'
-                : 'bg-transparent text-gray-500 border-gray-800'
+                ? 'bg-sky-950 text-sky-300 border-sky-700 font-semibold'
+                : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:text-white'
             }`}
           >
             SMA
           </button>
           <button
             onClick={() => setShowWMA(!showWMA)}
-            className={`px-2.5 py-1 rounded border transition ${
+            className={`px-2.5 py-1 rounded-lg border transition ${
               showWMA
-                ? 'bg-purple-950 text-purple-300 border-purple-600'
-                : 'bg-transparent text-gray-500 border-gray-800'
+                ? 'bg-purple-950 text-purple-300 border-purple-700 font-semibold'
+                : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:text-white'
             }`}
           >
             WMA
           </button>
           <button
             onClick={() => setShowEMA(!showEMA)}
-            className={`px-2.5 py-1 rounded border transition ${
+            className={`px-2.5 py-1 rounded-lg border transition ${
               showEMA
-                ? 'bg-emerald-950 text-emerald-300 border-emerald-600'
-                : 'bg-transparent text-gray-500 border-gray-800'
+                ? 'bg-emerald-950 text-emerald-300 border-emerald-700 font-semibold'
+                : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:text-white'
             }`}
           >
             EMA
@@ -121,17 +121,17 @@ export const MainCpuChart: React.FC<MainCpuChartProps> = ({
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
             <XAxis
               dataKey="timestamp"
               tickFormatter={formatXAxis}
-              stroke="#6b7280"
+              stroke="#737373"
               fontSize={11}
               tickLine={false}
             />
             <YAxis
               domain={[0, 100]}
-              stroke="#6b7280"
+              stroke="#737373"
               fontSize={11}
               tickLine={false}
               ticks={[0, 20, 40, 60, 75, 100]}
@@ -141,12 +141,12 @@ export const MainCpuChart: React.FC<MainCpuChartProps> = ({
             {/* High threshold reference line */}
             <ReferenceLine
               y={highThreshold}
-              stroke="#f43f5e"
+              stroke="#ef4444"
               strokeDasharray="4 4"
               strokeWidth={1.5}
               label={{
                 value: `High CPU (${highThreshold}%)`,
-                fill: '#f43f5e',
+                fill: '#ef4444',
                 fontSize: 10,
                 position: 'insideTopRight'
               }}
@@ -155,12 +155,12 @@ export const MainCpuChart: React.FC<MainCpuChartProps> = ({
             {/* Low threshold reference line */}
             <ReferenceLine
               y={lowThreshold}
-              stroke="#f59e0b"
+              stroke="#22c55e"
               strokeDasharray="4 4"
               strokeWidth={1}
               label={{
                 value: `Low CPU (${lowThreshold}%)`,
-                fill: '#f59e0b',
+                fill: '#22c55e',
                 fontSize: 10,
                 position: 'insideBottomRight'
               }}
@@ -171,10 +171,10 @@ export const MainCpuChart: React.FC<MainCpuChartProps> = ({
                 type="monotone"
                 dataKey="actual"
                 name="Actual CPU"
-                stroke="#e2e8f0"
-                strokeWidth={1.75}
+                stroke="#06b6d4"
+                strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, stroke: '#fff', strokeWidth: 1 }}
+                activeDot={{ r: 4, stroke: '#06b6d4', strokeWidth: 1 }}
               />
             )}
             {showSMA && (
@@ -183,6 +183,7 @@ export const MainCpuChart: React.FC<MainCpuChartProps> = ({
                 dataKey="sma"
                 name="SMA"
                 stroke="#38bdf8"
+                strokeDasharray="3 3"
                 strokeWidth={1.75}
                 dot={false}
               />
@@ -192,7 +193,8 @@ export const MainCpuChart: React.FC<MainCpuChartProps> = ({
                 type="monotone"
                 dataKey="wma"
                 name="WMA"
-                stroke="#c084fc"
+                stroke="#a855f7"
+                strokeDasharray="4 4"
                 strokeWidth={1.75}
                 dot={false}
               />
@@ -202,7 +204,8 @@ export const MainCpuChart: React.FC<MainCpuChartProps> = ({
                 type="monotone"
                 dataKey="ema"
                 name="EMA"
-                stroke="#34d399"
+                stroke="#10b981"
+                strokeDasharray="2 2"
                 strokeWidth={1.75}
                 dot={false}
               />

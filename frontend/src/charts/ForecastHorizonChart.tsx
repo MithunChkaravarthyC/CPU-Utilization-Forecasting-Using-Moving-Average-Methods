@@ -23,12 +23,12 @@ const CustomForecastTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const isForecast = payload[0]?.payload?.is_forecast;
     return (
-      <div className="bg-gray-950 border border-gray-700/80 p-3 rounded-lg shadow-xl text-xs space-y-1 font-mono">
-        <div className="flex items-center justify-between border-b border-gray-800 pb-1 mb-1">
-          <span className="text-gray-400">{label}</span>
+      <div className="bg-black border border-neutral-700 p-3 rounded-xl shadow-xl text-xs space-y-1 font-mono">
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-1 mb-1">
+          <span className="text-neutral-400">{label}</span>
           <span
             className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
-              isForecast ? 'bg-amber-950 text-amber-300' : 'bg-slate-800 text-slate-300'
+              isForecast ? 'bg-neutral-900 text-white border border-neutral-700' : 'bg-neutral-950 text-neutral-400'
             }`}
           >
             {isForecast ? 'Recursive Forecast' : 'Historical Sample'}
@@ -38,8 +38,8 @@ const CustomForecastTooltip = ({ active, payload, label }: any) => {
           if (entry.value === null || entry.value === undefined) return null;
           return (
             <div key={`item-${index}`} className="flex items-center justify-between space-x-4">
-              <span className="flex items-center space-x-1.5" style={{ color: entry.color }}>
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="flex items-center space-x-1.5 text-neutral-300">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || '#ffffff' }} />
                 <span>{entry.name}:</span>
               </span>
               <span className="font-bold text-white">{Number(entry.value).toFixed(2)}%</span>
@@ -76,30 +76,30 @@ export const ForecastHorizonChart: React.FC<ForecastHorizonChartProps> = ({
   const dividerTimestamp = forecastData[0]?.timestamp;
 
   return (
-    <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-5 shadow-sm space-y-4">
+    <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <div className="flex items-center space-x-2">
             <h3 className="text-base font-semibold text-white">
               {horizon.toUpperCase()} Multi-Step Forecast Horizon
             </h3>
-            <span className="px-2 py-0.5 rounded bg-sky-950 text-sky-300 text-xs font-mono border border-sky-800/50">
+            <span className="px-2 py-0.5 rounded bg-neutral-900 text-white text-xs font-mono border border-neutral-700">
               Recursive Horizon
             </span>
           </div>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-neutral-400 mt-1">
             Historical Actual vs. Recursive Mathematical Projections ({bestMethod} highlighted)
           </p>
         </div>
 
         <div className="flex items-center space-x-3 text-xs font-mono">
           <div className="flex items-center space-x-1.5">
-            <span className="w-3 h-0.5 bg-slate-300" />
-            <span className="text-gray-300">Observed History</span>
+            <span className="w-3 h-0.5 bg-cyan-400" />
+            <span className="text-cyan-300">Observed History</span>
           </div>
           <div className="flex items-center space-x-1.5">
-            <span className="w-3 h-0.5 bg-sky-400 border-b border-dashed" />
-            <span className="text-sky-300">Multi-step Future</span>
+            <span className="w-3 h-0.5 bg-amber-400 border-b border-dashed border-amber-400" />
+            <span className="text-amber-300">Multi-step Future</span>
           </div>
         </div>
       </div>
@@ -107,17 +107,17 @@ export const ForecastHorizonChart: React.FC<ForecastHorizonChartProps> = ({
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={combinedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
             <XAxis
               dataKey="timestamp"
               tickFormatter={formatXAxis}
-              stroke="#6b7280"
+              stroke="#737373"
               fontSize={11}
               tickLine={false}
             />
             <YAxis
               domain={[0, 100]}
-              stroke="#6b7280"
+              stroke="#737373"
               fontSize={11}
               tickLine={false}
               ticks={[0, 20, 40, 60, 75, 100]}
@@ -127,12 +127,12 @@ export const ForecastHorizonChart: React.FC<ForecastHorizonChartProps> = ({
             {/* Threshold reference */}
             <ReferenceLine
               y={highThreshold}
-              stroke="#f43f5e"
+              stroke="#ef4444"
               strokeDasharray="4 4"
               strokeWidth={1.5}
               label={{
                 value: `Threshold (${highThreshold}%)`,
-                fill: '#f43f5e',
+                fill: '#ef4444',
                 fontSize: 10,
                 position: 'insideTopRight'
               }}
@@ -142,11 +142,12 @@ export const ForecastHorizonChart: React.FC<ForecastHorizonChartProps> = ({
             {dividerTimestamp && (
               <ReferenceLine
                 x={dividerTimestamp}
-                stroke="#0284c7"
+                stroke="#a855f7"
                 strokeWidth={1.5}
+                strokeDasharray="3 3"
                 label={{
                   value: 'Forecast Start ➔',
-                  fill: '#38bdf8',
+                  fill: '#c084fc',
                   fontSize: 10,
                   position: 'top'
                 }}
@@ -158,7 +159,7 @@ export const ForecastHorizonChart: React.FC<ForecastHorizonChartProps> = ({
               type="monotone"
               dataKey="actual"
               name="Historical Actual"
-              stroke="#cbd5e1"
+              stroke="#06b6d4"
               strokeWidth={2}
               dot={false}
             />
@@ -179,7 +180,7 @@ export const ForecastHorizonChart: React.FC<ForecastHorizonChartProps> = ({
               type="monotone"
               dataKey="wma"
               name="WMA Forecast"
-              stroke="#c084fc"
+              stroke="#a855f7"
               strokeWidth={bestMethod === 'WMA' ? 2.5 : 1.5}
               strokeDasharray={bestMethod === 'WMA' ? undefined : '3 3'}
               dot={false}
@@ -190,7 +191,7 @@ export const ForecastHorizonChart: React.FC<ForecastHorizonChartProps> = ({
               type="monotone"
               dataKey="ema"
               name="EMA Forecast"
-              stroke="#34d399"
+              stroke="#10b981"
               strokeWidth={bestMethod === 'EMA' ? 2.5 : 1.5}
               strokeDasharray={bestMethod === 'EMA' ? undefined : '3 3'}
               dot={false}

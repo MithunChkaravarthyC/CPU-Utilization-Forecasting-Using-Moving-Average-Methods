@@ -150,45 +150,45 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#0e131f] border border-gray-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-gray-900/40">
+        <div className="px-6 py-4 border-b border-neutral-800 flex items-center justify-between bg-black/40">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-950/80 border border-sky-600/50 flex items-center justify-center text-sky-400">
+            <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-700 flex items-center justify-center text-white">
               <Laptop className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-bold text-white flex items-center space-x-2">
                 <span>Connect Your Machine or Server</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-950 text-sky-400 border border-sky-800">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-neutral-700">
                   Telemetry Engine
                 </span>
               </h2>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-neutral-400">
                 Stream live hardware metrics or import historical server CPU logs for forecasting.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition"
+            className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Session Status Banner */}
-        <div className="px-6 py-3 bg-gray-950/70 border-b border-gray-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="px-6 py-3 bg-black border-b border-neutral-800 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center space-x-2">
-            <span className="text-gray-400">Your Session ID:</span>
-            <code className="bg-gray-900 text-sky-300 font-mono px-2 py-0.5 rounded border border-gray-700 font-bold">
+            <span className="text-neutral-400">Your Session ID:</span>
+            <code className="bg-neutral-900 text-white font-mono px-2 py-0.5 rounded border border-neutral-700 font-bold">
               {sessionId}
             </code>
             <button
               onClick={handleRegenerateSession}
               title="Generate new unique session"
-              className="text-[11px] text-gray-400 hover:text-sky-300 underline"
+              className="text-[11px] text-neutral-400 hover:text-white underline"
             >
               New ID
             </button>
@@ -197,27 +197,27 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
           {/* Connection Status Pill */}
           <div className="flex items-center space-x-2">
             {sessionStatus?.is_connected ? (
-              <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-600/60 text-emerald-300 font-mono">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 live-dot animate-pulse" />
+              <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-600 text-white font-mono">
+                <span className="w-2 h-2 rounded-full bg-white live-dot animate-pulse" />
                 <span>
                   Connected: {sessionStatus.device_name || 'Your Machine'} ({sessionStatus.current_cpu}% CPU)
                 </span>
               </span>
             ) : sessionStatus?.total_samples && sessionStatus.total_samples > 0 ? (
-              <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-950/80 border border-amber-600/60 text-amber-300 font-mono">
-                <Radio className="w-3 h-3 text-amber-400" />
+              <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 font-mono">
+                <Radio className="w-3 h-3 text-neutral-400" />
                 <span>{sessionStatus.total_samples} samples stored (Offline)</span>
               </span>
             ) : (
-              <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-gray-900 border border-gray-800 text-gray-400 font-mono">
-                <span className="w-2 h-2 rounded-full bg-gray-500" />
+              <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 font-mono">
+                <span className="w-2 h-2 rounded-full bg-neutral-500" />
                 <span>Waiting for telemetry...</span>
               </span>
             )}
             <button
               onClick={() => checkSession(sessionId)}
               disabled={isPolling}
-              className="p-1 rounded text-gray-400 hover:text-white"
+              className="p-1 rounded text-neutral-400 hover:text-white"
               title="Refresh status"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isPolling ? 'animate-spin' : ''}`} />
@@ -226,13 +226,13 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-gray-800 bg-gray-900/20 px-6">
+        <div className="flex border-b border-neutral-800 bg-black/30 px-6">
           <button
             onClick={() => setActiveTab('agent')}
             className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${
               activeTab === 'agent'
-                ? 'border-sky-500 text-sky-400'
-                : 'border-transparent text-gray-400 hover:text-gray-200'
+                ? 'border-white text-white font-bold'
+                : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
             <Terminal className="w-4 h-4" />
@@ -242,8 +242,8 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
             onClick={() => setActiveTab('upload')}
             className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${
               activeTab === 'upload'
-                ? 'border-sky-500 text-sky-400'
-                : 'border-transparent text-gray-400 hover:text-gray-200'
+                ? 'border-white text-white font-bold'
+                : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
             <Upload className="w-4 h-4" />
@@ -253,8 +253,8 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
             onClick={() => setActiveTab('server')}
             className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition ${
               activeTab === 'server'
-                ? 'border-sky-500 text-sky-400'
-                : 'border-transparent text-gray-400 hover:text-gray-200'
+                ? 'border-white text-white font-bold'
+                : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
             <Server className="w-4 h-4" />
@@ -267,8 +267,8 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
           {/* TAB 1: STREAMING AGENT */}
           {activeTab === 'agent' && (
             <div className="space-y-4">
-              <div className="bg-sky-950/30 border border-sky-800/40 rounded-xl p-4 text-xs text-sky-200/90 leading-relaxed">
-                <span className="font-semibold text-sky-300 block mb-1">
+              <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-xs text-neutral-300 leading-relaxed">
+                <span className="font-bold text-white block mb-1">
                   🔒 Why an Agent is Needed:
                 </span>
                 Web browsers are strictly sandboxed for security and cannot directly read your laptop or server's hardware CPU utilization. Running this lightweight script reads real CPU metrics on your machine and streams them directly to your session dashboard!
@@ -276,17 +276,17 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
 
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                  <label className="text-xs font-semibold text-gray-300">
+                  <label className="text-xs font-semibold text-neutral-300">
                     Step 1: Choose your environment and copy the 1-line command:
                   </label>
-                  <div className="flex items-center space-x-1.5 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800">
+                  <div className="flex items-center space-x-1.5 bg-neutral-900 p-0.5 rounded-lg border border-neutral-800">
                     <button
                       type="button"
                       onClick={() => setOsType('windows')}
                       className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition ${
                         osType === 'windows'
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-white text-black font-bold shadow-sm'
+                          : 'text-neutral-400 hover:text-white'
                       }`}
                     >
                       Windows (PowerShell)
@@ -296,8 +296,8 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                       onClick={() => setOsType('mac-linux')}
                       className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition ${
                         osType === 'mac-linux'
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-white text-black font-bold shadow-sm'
+                          : 'text-neutral-400 hover:text-white'
                       }`}
                     >
                       Mac / Linux
@@ -307,8 +307,8 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                       onClick={() => setOsType('local')}
                       className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition ${
                         osType === 'local'
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-white text-black font-bold shadow-sm'
+                          : 'text-neutral-400 hover:text-white'
                       }`}
                     >
                       Local Repo
@@ -317,17 +317,17 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                 </div>
 
                 <div className="relative group">
-                  <pre className="bg-black/80 border border-gray-800 text-emerald-400 font-mono text-xs p-3.5 rounded-xl overflow-x-auto selection:bg-emerald-900 break-all whitespace-pre-wrap">
+                  <pre className="bg-black border border-neutral-800 text-neutral-200 font-mono text-xs p-3.5 rounded-xl overflow-x-auto selection:bg-neutral-800 break-all whitespace-pre-wrap">
                     {getAgentCliCommand(osType)}
                   </pre>
                   <button
                     onClick={handleCopyCommand}
-                    className="absolute right-2.5 top-2.5 px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-medium flex items-center space-x-1.5 border border-gray-700 transition"
+                    className="absolute right-2.5 top-2.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-200 text-xs font-medium flex items-center space-x-1.5 border border-neutral-700 transition"
                   >
                     {copied ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-emerald-400">Copied!</span>
+                        <Check className="w-3.5 h-3.5 text-white" />
+                        <span className="text-white">Copied!</span>
                       </>
                     ) : (
                       <>
@@ -337,42 +337,42 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                     )}
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1.5">
+                <p className="text-[11px] text-neutral-400 mt-1.5">
                   {osType === 'windows' && 'Automatically downloads agent.py into your current folder and starts streaming.'}
                   {osType === 'mac-linux' && 'Fetches agent.py via curl and streams metrics every 5 seconds.'}
                   {osType === 'local' && 'Runs backend/agent.py directly from your cloned project directory.'}
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-gray-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="pt-2 border-t border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div>
-                  <span className="text-gray-300 font-semibold block">
+                  <span className="text-neutral-300 font-semibold block">
                     Don't have curl or prefer downloading?
                   </span>
-                  <span className="text-gray-400">
+                  <span className="text-neutral-400">
                     Download the standalone Python script (zero dependencies, auto-installs psutil).
                   </span>
                 </div>
                 <a
                   href={getAgentDownloadUrl()}
                   download="agent.py"
-                  className="inline-flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-medium border border-gray-700 transition whitespace-nowrap"
+                  className="inline-flex items-center space-x-2 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-medium border border-neutral-700 transition whitespace-nowrap"
                 >
-                  <Download className="w-3.5 h-3.5 text-sky-400" />
+                  <Download className="w-3.5 h-3.5 text-white" />
                   <span>Download agent.py</span>
                 </a>
               </div>
 
               {/* Live Preview / Status Card */}
               {sessionStatus?.is_connected ? (
-                <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-600/50 flex items-center justify-between">
+                <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-700 flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full bg-emerald-400 live-dot animate-pulse" />
+                    <div className="w-3 h-3 rounded-full bg-white live-dot animate-pulse" />
                     <div>
-                      <p className="font-semibold text-emerald-300 text-xs">
+                      <p className="font-bold text-white text-xs">
                         Agent Active & Streaming Data!
                       </p>
-                      <p className="text-[11px] text-emerald-400/80">
+                      <p className="text-[11px] text-neutral-400">
                         Device: {sessionStatus.device_name} • Last sample: {sessionStatus.last_sample_time}
                       </p>
                     </div>
@@ -382,16 +382,16 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                       onClose();
                       if (onDataIngested) onDataIngested();
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow transition"
+                    className="px-3 py-1.5 rounded-lg bg-white hover:bg-neutral-200 text-black text-xs font-bold shadow transition"
                   >
                     View Forecasts Now →
                   </button>
                 </div>
               ) : (
-                <div className="p-3.5 rounded-xl bg-gray-900/60 border border-gray-800 text-xs text-gray-400 flex items-center space-x-2.5">
-                  <Radio className="w-4 h-4 text-gray-500 animate-pulse" />
+                <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-400 flex items-center space-x-2.5">
+                  <Radio className="w-4 h-4 text-neutral-500 animate-pulse" />
                   <span>
-                    Listening for telemetry on session <code className="text-gray-300 font-bold">{sessionId}</code>... Once you launch the command, metrics will reflect automatically.
+                    Listening for telemetry on session <code className="text-white font-bold">{sessionId}</code>... Once you launch the command, metrics will reflect automatically.
                   </span>
                 </div>
               )}
@@ -401,15 +401,15 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
           {/* TAB 2: CSV UPLOAD */}
           {activeTab === 'upload' && (
             <form onSubmit={handleFileUpload} className="space-y-4">
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-xs text-gray-300">
-                <span className="font-semibold text-white block mb-1">
+              <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-xs text-neutral-300">
+                <span className="font-bold text-white block mb-1">
                   📊 Zero-Install Instant Analysis
                 </span>
                 Upload server logs or CPU performance exports from Windows Task Manager, Linux <code>sar</code>, Prometheus, or any CSV with timestamp and CPU% columns.
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-300 block mb-1.5">
+                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
                   Machine or Server Label:
                 </label>
                 <input
@@ -417,15 +417,15 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                   value={deviceName}
                   onChange={(e) => setDeviceName(e.target.value)}
                   placeholder="e.g., AWS EC2 Cluster / My Laptop"
-                  className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                  className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-white"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-300 block mb-1.5">
+                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
                   Select CSV / Log File:
                 </label>
-                <div className="border-2 border-dashed border-gray-800 hover:border-gray-700 rounded-xl p-6 text-center cursor-pointer bg-gray-950/40 transition">
+                <div className="border-2 border-dashed border-neutral-800 hover:border-neutral-700 rounded-xl p-6 text-center cursor-pointer bg-black/60 transition">
                   <input
                     type="file"
                     accept=".csv,.txt,.tsv,.log"
@@ -438,22 +438,22 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                     }}
                   />
                   <label htmlFor="csv-file-input" className="cursor-pointer block">
-                    <FileText className="w-8 h-8 text-sky-400 mx-auto mb-2" />
+                    <FileText className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
                     {selectedFile ? (
                       <div>
                         <span className="font-semibold text-white text-xs block">
                           {selectedFile.name}
                         </span>
-                        <span className="text-[11px] text-gray-400">
+                        <span className="text-[11px] text-neutral-400">
                           {(selectedFile.size / 1024).toFixed(1)} KB • Ready to upload
                         </span>
                       </div>
                     ) : (
                       <div>
-                        <span className="font-semibold text-gray-300 text-xs block">
+                        <span className="font-semibold text-neutral-300 text-xs block">
                           Click to browse or drag & drop CSV file
                         </span>
-                        <span className="text-[11px] text-gray-500">
+                        <span className="text-[11px] text-neutral-500">
                           Accepts .csv, .txt, .tsv, .log with timestamp & cpu columns
                         </span>
                       </div>
@@ -466,8 +466,8 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                 <div
                   className={`p-3 rounded-lg text-xs ${
                     uploadMessage.type === 'success'
-                      ? 'bg-emerald-950/70 border border-emerald-700/60 text-emerald-300'
-                      : 'bg-rose-950/70 border border-rose-700/60 text-rose-300'
+                      ? 'bg-neutral-900 border border-neutral-700 text-white'
+                      : 'bg-neutral-900 border border-neutral-700 text-neutral-300'
                   }`}
                 >
                   {uploadMessage.text}
@@ -477,11 +477,11 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
               <button
                 type="submit"
                 disabled={!selectedFile || isUploading}
-                className="w-full py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow flex items-center justify-center space-x-2"
+                className="w-full py-2.5 rounded-lg bg-white hover:bg-neutral-200 disabled:opacity-50 text-black font-bold text-xs transition shadow flex items-center justify-center space-x-2"
               >
                 {isUploading ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin text-black" />
                     <span>Parsing & Ingesting Dataset...</span>
                   </>
                 ) : (
@@ -497,15 +497,15 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
           {/* TAB 3: BACKEND SETTINGS */}
           {activeTab === 'server' && (
             <div className="space-y-4">
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-xs text-gray-300">
-                <span className="font-semibold text-white block mb-1">
+              <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-xs text-neutral-300">
+                <span className="font-bold text-white block mb-1">
                   ⚙️ Production / Localhost Bridge
                 </span>
                 If you have deployed the FastAPI backend to Render, Railway, or are running it on your own server, enter the backend URL here. The Vercel frontend will connect to it directly.
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-300 block mb-1.5">
+                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
                   Backend API Base URL:
                 </label>
                 <input
@@ -513,15 +513,15 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                   value={customServerUrl}
                   onChange={(e) => setCustomServerUrl(e.target.value)}
                   placeholder="https://your-api.onrender.com or http://localhost:8000"
-                  className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-sky-500"
+                  className="w-full bg-black border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-white"
                 />
-                <p className="text-[11px] text-gray-500 mt-1">
+                <p className="text-[11px] text-neutral-500 mt-1">
                   Current active endpoint: <code>{getApiBaseUrl()}</code>
                 </p>
               </div>
 
               {healthStatus && (
-                <div className="p-3 rounded-lg bg-gray-900 border border-gray-800 text-xs font-mono text-sky-300">
+                <div className="p-3 rounded-lg bg-black border border-neutral-800 text-xs font-mono text-neutral-200">
                   {healthStatus}
                 </div>
               )}
@@ -531,14 +531,14 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
                   type="button"
                   onClick={handleSaveServerUrl}
                   disabled={isTestingHealth}
-                  className="flex-1 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition"
+                  className="flex-1 py-2 rounded-lg bg-white hover:bg-neutral-200 text-black text-xs font-bold transition disabled:opacity-50"
                 >
                   {isTestingHealth ? 'Testing Connection...' : 'Save & Test Connection'}
                 </button>
                 <button
                   type="button"
                   onClick={handleResetServerUrl}
-                  className="px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs transition border border-gray-700"
+                  className="px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 text-xs transition border border-neutral-700"
                 >
                   Reset Default
                 </button>
@@ -548,11 +548,11 @@ export const ConnectDataModal: React.FC<ConnectDataModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-gray-800 bg-gray-900/40 flex items-center justify-between text-xs text-gray-400">
+        <div className="px-6 py-3 border-t border-neutral-800 bg-black/40 flex items-center justify-between text-xs text-neutral-400">
           <span>Dual Mode: Streaming Agent & CSV Ingestion</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium transition"
+            className="px-4 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-medium border border-neutral-700 transition"
           >
             Close
           </button>
