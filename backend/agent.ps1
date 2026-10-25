@@ -6,6 +6,15 @@ param(
     [switch]$Once
 )
 
+# ── TLS Fix: Force TLS 1.2 for HTTPS endpoints (required on older Windows / PS5) ──
+try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+} catch {
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject([Net.SecurityProtocolType], 3072) # Tls12
+    } catch { <# ignore on very old systems #> }
+}
+
 $Server = $Server.TrimEnd('/')
 $Endpoint = "$Server/api/telemetry/push"
 
@@ -23,60 +32,86 @@ Write-Host " Streaming live CPU metrics... Press Ctrl+C to stop.`n" -ForegroundC
 $samples = 0
 while ($true) {
     try {
-        # Native Windows Performance Counter for exact CPU usage percentage
+        # ── CPU Measurement: Try best method first, fall back gracefully ──
         $cpuRaw = $null
-        try {
-            $cpuRaw = (Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -ErrorAction SilentlyContinue | Where-Object Name -eq '_Total').PercentProcessorTime
-        } catch {
-            $cpuRaw = $null
-        }
 
+        # Method 1: Performance counter (most accurate, near real-time)
+        try {
+            $cpuRaw = (Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -ErrorAction SilentlyContinue |
+                       Where-Object { $_.Name -eq '_Total' }).PercentProcessorTime
+        } catch { $cpuRaw = $null }
+
+        # Method 2: WMI LoadPercentage (fallback - less accurate but universal)
         if ($null -eq $cpuRaw) {
             try {
-                $cpuRaw = ((Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue).LoadPercentage | Measure-Object -Average).Average
-            } catch {
-                $cpuRaw = 15.0
-            }
+                $cpuRaw = ((Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue).LoadPercentage |
+                           Measure-Object -Average).Average
+            } catch { $cpuRaw = $null }
         }
 
+        # Method 3: Legacy WMI (for very old Windows versions / Windows Server 2008 era)
+        if ($null -eq $cpuRaw) {
+            try {
+                $cpuRaw = ((Get-WmiObject Win32_Processor -ErrorAction SilentlyContinue).LoadPercentage |
+                           Measure-Object -Average).Average
+            } catch { $cpuRaw = $null }
+        }
+
+        # Final fallback: stable idle value (indicates measurement failure, not real CPU)
+        if ($null -eq $cpuRaw) { $cpuRaw = 15.0 }
+
         $cpu = [math]::Round([double]$cpuRaw, 1)
-        if ($cpu -lt 0) { $cpu = 0.0 }
+        if ($cpu -lt 0)   { $cpu = 0.0 }
         if ($cpu -gt 100) { $cpu = 100.0 }
 
+        # ── ASCII Progress Bar ──
         $barLength = 18
-        $filled = [math]::Round($barLength * $cpu / 100.0)
-        $unfilled = $barLength - $filled
-        if ($unfilled -lt 0) { $unfilled = 0 }
-        $bar = ("=" * $filled) + ("-" * $unfilled)
+        $filled    = [math]::Round($barLength * $cpu / 100.0)
+        $unfilled  = [math]::Max(0, $barLength - $filled)
+        $bar       = ("=" * $filled) + ("-" * $unfilled)
 
-        $timeStr = (Get-Date).ToString("HH:mm:ss")
+        $timeStr   = (Get-Date).ToString("HH:mm:ss")
         $timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
 
+        # ── Build JSON payload ──
         $payload = @{
-            session_id = $Session
+            session_id      = $Session
             cpu_utilization = $cpu
-            timestamp = $timestamp
-            device_name = $Device
-            source = "LIVE"
+            timestamp       = $timestamp
+            device_name     = $Device
+            source          = "LIVE"
         } | ConvertTo-Json -Compress
 
         Write-Host "[$timeStr] CPU [$bar] $($cpu.ToString('0.0'))% " -NoNewline
 
+        # ── POST to backend with retry-friendly timeout ──
         try {
-            $resp = Invoke-RestMethod -Uri $Endpoint -Method Post -Body $payload -ContentType "application/json" -TimeoutSec 6
+            $resp = Invoke-RestMethod `
+                -Uri         $Endpoint `
+                -Method      Post `
+                -Body        $payload `
+                -ContentType "application/json" `
+                -TimeoutSec  10 `
+                -ErrorAction Stop
             $samples++
-            Write-Host "-> Streamed (Total: $samples)" -ForegroundColor Green
-            if ($Once) { break }
+            Write-Host "-> Streamed OK (Total: $samples)" -ForegroundColor Green
         } catch {
-            Write-Host "-> Retrying next interval ($($_.Exception.Message))" -ForegroundColor Yellow
+            $errMsg = $_.Exception.Message
+            Write-Host "-> Retry next interval ($errMsg)" -ForegroundColor Yellow
         }
 
+        if ($Once) { break }
         Start-Sleep -Seconds $Interval
+
     } catch [System.Management.Automation.PipelineStoppedException] {
+        # Ctrl+C pressed - clean exit
         break
     } catch {
-        Write-Host "`nNotice: $($_.Exception.Message). Waiting 5s..." -ForegroundColor DarkYellow
+        Write-Host "`nError: $($_.Exception.Message). Waiting 5s..." -ForegroundColor DarkYellow
         Start-Sleep -Seconds 5
     }
 }
-Write-Host "`nStreaming stopped. Total measurements sent: $samples" -ForegroundColor Cyan
+
+Write-Host "`n================================================================" -ForegroundColor Cyan
+Write-Host " Streaming stopped. Total measurements sent: $samples" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan

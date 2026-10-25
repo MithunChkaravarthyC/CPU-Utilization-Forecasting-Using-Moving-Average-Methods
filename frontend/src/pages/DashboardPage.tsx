@@ -256,12 +256,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <span>Run this command in Windows PowerShell (Zero Python Needed):</span>
               </span>
               <span className="text-[11px] text-neutral-500 hidden sm:inline">
-                Runs instantly on Windows 10 & 11
+                Works on any Windows laptop — no install needed
               </span>
             </div>
 
             <div className="bg-black border border-neutral-800 hover:border-neutral-700 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono text-xs transition">
-              <code className="text-cyan-300 select-all break-all sm:break-normal">
+              <code className="text-cyan-300 select-all break-all">
                 {pwshCommand}
               </code>
               <button
@@ -282,6 +282,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 )}
               </button>
             </div>
+
+            {/* Compatibility badges */}
+            <div className="flex flex-wrap gap-2 text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 font-mono">✓ Windows 10 &amp; 11</span>
+              <span className="px-2 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 font-mono">✓ PowerShell 5.x &amp; 7.x</span>
+              <span className="px-2 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 font-mono">✓ TLS 1.2 / HTTPS Ready</span>
+              <span className="px-2 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 font-mono">✓ Execution Policy Bypass</span>
+              <span className="px-2 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 font-mono">✓ Zero Python / No Install</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-900 text-emerald-400 font-mono">✓ Your Session Isolated</span>
+            </div>
           </div>
 
           {/* Quick Steps & Alternative Actions */}
@@ -292,7 +302,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <span>Open PowerShell</span>
               </div>
               <p className="text-[11px] text-neutral-400 leading-snug">
-                Press <kbd className="px-1 py-0.5 rounded bg-neutral-800 text-neutral-200 text-[10px]">Win + X</kbd> and select Windows Terminal or PowerShell.
+                Press <kbd className="px-1 py-0.5 rounded bg-neutral-800 text-neutral-200 text-[10px]">Win + X</kbd> → Windows Terminal or PowerShell. Works on any laptop!
               </p>
             </div>
 

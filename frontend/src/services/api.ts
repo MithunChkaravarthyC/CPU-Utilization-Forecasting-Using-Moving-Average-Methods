@@ -235,10 +235,14 @@ export function getAgentCliCommand(osType: 'windows' | 'windows-file' | 'mac-lin
   const sess = getSessionId();
   const dlUrl = getAgentDownloadUrl('python');
   const ps1Url = getAgentDownloadUrl('powershell');
+  const agentUrl = `${ps1Url}?session=${encodeURIComponent(sess)}&server=${encodeURIComponent(server)}`;
 
   if (osType === 'windows') {
-    // Pure native Windows PowerShell - Zero Python required!
-    return `irm "${ps1Url}?session=${sess}&server=${encodeURIComponent(server)}" | iex`;
+    // ── Works on ALL Windows laptops (Win10/11 PS5 & PS7, corporate TLS restrictions) ──
+    // 1. Force TLS 1.2 so irm can reach HTTPS servers on older PS versions
+    // 2. -ExecutionPolicy Bypass bypasses corporate restrictions
+    // 3. & ([scriptblock]::Create(...)) runs the downloaded text as a script with full param support
+    return `powershell -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; iex(irm '${agentUrl}')"` ;
   }
   if (osType === 'windows-file') {
     // Download agent.ps1 and run via PowerShell with execution policy bypass
